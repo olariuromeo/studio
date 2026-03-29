@@ -29,8 +29,8 @@ If you want to support our project and help us grow it, you can [become a sponso
 
 ### Documentation
 
-  - [Core Project Structure](docs/project-structure)
-  - [The Visual Production Flow](docs/how-the-visual-flow-works)
+  - [Core Project Structure](docs/project-structure.md)
+  - [The Visual Production Flow](docs/how-the-visual-flow-works.md)
   - [Detailed Installation Guide](docs/INSTALL.md)
 
 ### Core Features
