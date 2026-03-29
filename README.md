@@ -6,50 +6,49 @@
 
 ## Sponsors
 
-If you want to support our project and help us grow it, you can [become a sponsor on GitHub](https://www.google.com/search?q=https://github.com/sponsors/coozila)
+If you want to support our project and help us grow it, you can [become a sponsor on GitHub](https://github.com/sponsors/coozila)
 
-<p align="center"\>
-    <a href="[https://github.com/sponsors/coozila](https://www.google.com/search?q=https://github.com/sponsors/coozila)"\>
-    </a\>
-</p\>
+-----
 
-# 🎬 Coozila\! Video Studio
+# 🎬 Coozila\! Video Studio v4.0
 
-## The Ultimate AI Music Video Orchestrator with Visual Canvas
+## The Ultimate Hybrid AI Orchestrator for Cinematic Production
 
-**Coozila\! Video Studio** is not just a backend; it is a hybrid editing environment integrated directly into **ComfyUI**. By clicking the dedicated button in the chat interface, you open an **Interactive Canvas** that allows you to visually manage your video projects, synchronizing cinematic directing with musical rhythm (BPM) in real-time.
+**Coozila\! Video Studio** is a professional-grade production environment built directly into **ComfyUI**. Optimized for the **2026** tech stack (**CUDA 12.5 / RTX 3080**), it transforms your chat interface into an **Interactive Visual Canvas**. This allows you to orchestrate high-fidelity video projects by synchronizing cinematic directing with musical rhythm (BPM) in real-time.
 
 ### Why Choose Coozila\! Video Studio?
 
-  - **Rhythmic Precision**: Achieve perfect synchronization with the beat using advanced audio analysis algorithms (Librosa-based).
-  - **Visual Editing Workflow**: Manage your timeline visually rather than through code, using an intuitive Canvas integrated within the ComfyUI chat.
-  - **Dynamic Graph Generation**: Automatically build complex node graphs for **Wan 2.2**, tailored specifically to your project's duration.
-  - **AI-Powered Style Vision**: Extract visual aesthetics directly from reference images to maintain artistic consistency across all shots.
-  - **Dual Rendering Modes**: Save time and resources with a "Quick Preview" (Distill LoRA) mode before committing to high-fidelity 8K final renders.
+  * **Hybrid Powerhouse**: Leverages **FLUX.1 Krea-dev** for ultra-detailed storyboards and **Wan 2.2 (14B)** for state-of-the-art cinematic motion.
+  * **Tiered Rendering Pipeline**: Optimized VRAM management. Move from high-speed **Distill LoRA Previews** to **720p Production Masters** seamlessly.
+  * **Rhythmic Precision**: Achieve frame-perfect synchronization using advanced **Librosa-based** audio analysis.
+  * **Visual Storyboarding**: Lock actor consistency across shots using integrated **IP-Adapter FaceID** logic directly on the Canvas.
+  * **Dynamic Graph Architecture**: Automatically builds complex, duration-aware node graphs for **Wan 2.2** based on your audio track's structure.
 
 ### Documentation
 
-  - [Core Project Structure](docs/project-structure.md)
-  - [The Visual Production Flow](docs/how-the-visual-flow-works.md)
-  - [Detailed Installation Guide](docs/INSTALL.md)
+  * [Core Project Structure](https://www.google.com/search?q=docs/project-structure.md)
+  * [The Visual Production Flow](https://www.google.com/search?q=docs/how-the-visual-flow-works.md)
+  * [Detailed Installation Guide (CUDA 12.5)](https://www.google.com/search?q=docs/INSTALL.md)
+
+-----
 
 ### Core Features
 
-  - **Interactive Timeline**: Visually render clips, audio waveforms, and style previews directly in your browser.
-  - **Master Schema (Timeline.1)**: Utilizes a professional data standard compatible with industry-standard editing software (FCPXML).
-  - **Automated Directing**: Apply cinematic templates (Epic Romance, Action Track) that auto-adjust to the music's structure.
-  - **Persistent Session Memory**: Project states are automatically saved; never lose your progress even if you close the window.
-  - **Multi-Threaded Architecture**: Harness the power of sequential rendering for Wan 2.2, managing VRAM through intelligent chunking.
+  * **Interactive Timeline**: Visually manage clips, audio waveforms, and style previews. No more "guessing" node connections.
+  * **Master Schema (Timeline.1)**: A professional data standard compatible with industry-leading NLEs (FCPXML/EDL).
+  * **Automated Directing**: Apply cinematic templates (Epic Action, Noir, Sci-Fi) that auto-adjust to your music's BPM.
+  * **Intelligent VRAM Chunking**: Sequential rendering for **Wan 2.2**, allowing high-quality 720p exports even on 10GB-12GB consumer cards.
+  * **Actor Persistence**: One-click face locking to ensure your protagonist remains identical from the first shot to the last.
 
-### Easy Deployment
+-----
 
-The package comes with a straightforward setup process (`setup_studio.py`), enabling developers to configure the **Python 3.11** environment and required folder structures in minutes. Get your "✨ Studio" button running and start creating immediately.
+## ⚡ The Production Pipeline (3-Stage Workflow)
 
-### Who Is It For?
+To maximize resources on the **RTX 3080**, Coozila\! Studio utilizes a progressive rendering flow:
 
-  - **AI Artists**: Looking for total control over montage without leaving the ComfyUI ecosystem.
-  - **Music Producers**: In need of high-quality music videos perfectly synced to their tracks.
-  - **Content Creators**: Aiming for professional-grade cinematic results with minimal manual effort and maximum creative freedom.
+1.  **Quick Preview (Distill Mode)**: Uses low-step **Distill LoRA** nodes to validate motion and composition in seconds.
+2.  **Production Master (720p)**: Generates the final cinematic output at **720p** resolution using the full **Wan 2.2** engine for maximum physics and detail.
+3.  **Future Upscaling (Roadmap)**: Planned integration for **LTX Video-to-Video** and specialized Diffusion Upscalers to push 720p masters into 4K/8K territory (*Coming in v4.5*).
 
 -----
 
@@ -57,71 +56,47 @@ The package comes with a straightforward setup process (`setup_studio.py`), enab
 
 ### 🖥️ I. Interface & UI (Web/JS)
 
-  - **`studio_tab.js`**: The UI extension that injects the Studio button and handles the modal overlay.
-  - **`canvas_renderer.js`**: The graphics engine that translates the Studio Schema into interactive timeline blocks.
+  * **`canvas.js`**: The primary orchestrator for the visual timeline.
+  * **`payload_factory.js`**: Translates UI actions into JSON instructions for ComfyUI.
 
 ### 🧠 II. Logic Components (Python - Backend)
 
-  - **`orchestrator.py`**: The Central Command managing the project lifecycle and cloning templates.
-  - **`audio_sync.py`**: The Rhythmic Engine that calculates "cut points" based on BPM analysis.
-  - **`payload_factory.py`**: The Instruction Factory that dynamically wires Wan 2.2 nodes.
-  - **`style_engine.py`**: The Architect building complex prompts based on chosen styles and camera logic.
+  * **`orchestrator.py`**: Handles project lifecycles and template cloning.
+  * **`audio_sync.py`**: The "Heartbeat" engine for rhythmic cut-point calculation.
+  * **`payload_factory.py`**: Dynamically wires the **FLUX/Wan** hybrid nodes.
 
 ### 💾 III. Data Libraries (JSON Templates)
 
-  - **`master_schema.json`**: The technical blueprint for professional timelines.
-  - **`styles.json`**: A curated catalog of visual aesthetics (Nolan, Gothic, Anime).
-  - **`shot_presets.json`**: A library of pre-calculated cinematic camera movements.
+  * **`master_schema.json`**: The technical blueprint for the timeline.
+  * **`styles.json`**: A curated catalog of 2026's best visual aesthetics.
 
 -----
 
 ## How the Visual Flow Works
 
-1.  **Activation**: Click the **✨ Studio** button in the Chat area to open the **Studio Canvas**.
-2.  **Import**: Upload your track. `audio_sync.py` immediately draws the waveform on the Canvas.
-3.  **Directing**: Select a Cinematic Preset. The Canvas populates with shots perfectly timed to the beat.
-4.  **Preview**: Trigger a "Quick Preview" job (Distill) to validate camera motion and composition.
-5.  **Finalize**: Once satisfied, hit **Master Render** to generate the high-fidelity 8K final video.
+1.  **Activation**: Click the **✨ Studio** button in your chat interface to launch the **Canvas**.
+2.  **Import**: Upload your `.wav` track. The system immediately renders the waveform and calculates BPM.
+3.  **Storyboard**: Use **FLUX.1** to generate consistent character stills for each beat.
+4.  **Preview**: Trigger a **Distill Render** to check motion paths and character consistency.
+5.  **Master**: Hit **Master Render** to export your cinematic **720p** video synced to the audio.
 
 -----
 
 ## References and Credits
 
-### AI Contributions:
+### AI Contributions
 
-We gratefully acknowledge **Hypatia AI**, a project of **Coozila\! AGI**, for providing intelligent assistance and support in developing this documentation and enhancing the overall project architecture.
-
-### What is Coozila\! Studio Schema?
-
-It is a structured data format (Timeline, Track, Clip) designed to be the bridge between Generative AI and professional non-linear video editors (NLEs).
+This documentation and architecture were enhanced with the assistance of **Hypatia AI**, a project of **Coozila\! AGI**, ensuring the project remains at the cutting edge of 2026's AI standards.
 
 ### What is Wan 2.2?
 
-The state-of-the-art open-source video model in 2026, which Coozila\! orchestrates to produce stable, artifact-free results at cinematic resolutions.
+The definitive open-source video model of 2026, orchestrated by Coozila\! to produce artifact-free, high-motion cinematic results.
 
-## Installation Assistance
+## Support & Installation
 
-If you would like personalized assistance with the installation of this product, please contact the **Coozila\! Team** at [lab@coozila.com](mailto:lab@coozila.com). We will be happy to help you with the setup process and ensure a smooth integration into your workflow.
+For personalized enterprise assistance or high-load server setup, contact the **Coozila\! Team** at [lab@coozila.com](mailto:lab@coozila.com).
 
-Based on the size and complexity of your project, we will provide you with a tailored pricing quote.
-
-You can also check out our developer profile: [Romulus (Coozila\! Founder)](https://www.coozila.com/plus/view-persons-profile/romulus).
-
-## Trademarks and Copyright
-
-### Copyright
-
-Copyright (C) 2009 - 2026 Coozila\! Team. Licensed under the **MIT License**.
-
-### Licenses
-
-- **Coozila! Studio**: [MIT License](LICENSE) 
-- **Wan 2.2**: [Wan License](https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt)
-- **ComfyUI**: [GPL License](https://github.com/comfyanonymous/ComfyUI/blob/master/LICENSE)
-
-### Disclaimer
-
-This product is provided "as is," without any guarantees regarding performance in high-load production environments without prior testing. Users are responsible for their own GPU resources and compliance with the licenses of the AI models utilized.
+**Copyright (C) 2009 - 2026 Coozila\! Team. Licensed under the MIT License.**
 
 -----
 
