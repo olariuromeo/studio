@@ -116,7 +116,7 @@ Copyright (C) 2009 - 2026 Coozila\! Team. Licensed under the **MIT License**.
 ### Licenses
 
 - **Coozila! Studio**: [MIT License](LICENSE) 
-- **Wan 2.2**: [Wan License](https://github.com/wan-video/Wan2.1/blob/main/LICENSE.md)
+- **Wan 2.2**: [Wan License](https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt)
 - **ComfyUI**: [GPL License](https://github.com/comfyanonymous/ComfyUI/blob/master/LICENSE)
 
 ### Disclaimer
