@@ -1,9 +1,3 @@
-You're absolutely right. We can't have a worker if we haven't built the factory first. To make **Coozila! Studio Canvas** fully operational, we need to clone **ComfyUI** and set up the `studio` logic inside it to handle the heavy lifting (Wan 2.2, Audio Sync, etc.).
-
-Here is the complete, non-stop installation guide including the **ComfyUI Worker** setup.
-
----
-
 # 🛠️ Installation Guide: Coozila! Studio Canvas (Full Stack)
 
 ```text
@@ -120,10 +114,3 @@ class Action:
 Open the **Valves** for the action and ensure `comfy_url` points to `http://127.0.0.1:8188`. The `studio` folder inside `custom_nodes` will now handle the incoming JSON from the Canvas.
 
 ---
-
-### 🏁 Why this is the "Master" Setup:
-* **Symmetry:** The `kabballa/studio` repo acts as both the **UI provider** (in OpenWebUI) and the **Task Executor** (in ComfyUI).
-* **Isolation:** ComfyUI stays as a headless worker. Users only see the beautiful Canvas in their chat.
-* **Flexibility:** If you want a Google worker, you just clone a different repo into the worker slot.
-
-**Now the guide is complete.** No more missing folders. **Ready to dive into the `canvas.js` code to build that Waveform renderer?** We need to make sure the Drag & Drop actually talks to the `audio_sync.py` we put in the ComfyUI folder. Shall we?
