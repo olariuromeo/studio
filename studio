@@ -1,0 +1,226 @@
+{
+    "STUDIO_SCHEMA": "Timeline.1",
+    "metadata": {},
+    "name": "agent_thread_441bcf96-976e-4f59-af49-7a5e0a020190",
+    "global_start_time": null,
+    "tracks": {
+        "STUDIO_SCHEMA": "Stack.1",
+        "metadata": {},
+        "name": "tracks",
+        "source_range": null,
+        "effects": [],
+        "markers": [],
+        "enabled": true,
+        "children": [
+            {
+                "STUDIO_SCHEMA": "Track.1",
+                "metadata": {},
+                "name": "Video",
+                "source_range": null,
+                "effects": [],
+                "markers": [],
+                "enabled": true,
+                "children": [
+                    {
+                        "STUDIO_SCHEMA": "Clip.2",
+                        "metadata": {
+                            "generate_type": "normal"
+                        },
+                        "name": "Shot_#### Start Frame\nCadru larg (W...",
+                        "source_range": {
+                            "STUDIO_SCHEMA": "TimeRange.1",
+                            "duration": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 96.0
+                            },
+                            "start_time": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 0.0
+                            }
+                        },
+                        "effects": [],
+                        "markers": [],
+                        "enabled": true,
+                        "media_references": {
+                            "DEFAULT_MEDIA": {
+                                "STUDIO_SCHEMA": "ExternalReference.1",
+                                "metadata": {},
+                                "name": "",
+                                "available_range": {
+                                    "STUDIO_SCHEMA": "TimeRange.1",
+                                    "duration": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 121.000008
+                                    },
+                                    "start_time": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 0.0
+                                    }
+                                },
+                                "available_image_bounds": null,
+                                "target_url": "VideoClips/shot_1.mp4"
+                            }
+                        },
+                        "active_media_reference_key": "DEFAULT_MEDIA"
+                    },
+                    {
+                        "STUDIO_SCHEMA": "Clip.2",
+                        "metadata": {
+                            "generate_type": "normal"
+                        },
+                        "name": "Shot_#### Start Frame\nCadru general...",
+                        "source_range": {
+                            "STUDIO_SCHEMA": "TimeRange.1",
+                            "duration": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 48.0
+                            },
+                            "start_time": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 0.0
+                            }
+                        },
+                        "effects": [],
+                        "markers": [],
+                        "enabled": true,
+                        "media_references": {
+                            "DEFAULT_MEDIA": {
+                                "STUDIO_SCHEMA": "ExternalReference.1",
+                                "metadata": {},
+                                "name": "",
+                                "available_range": {
+                                    "STUDIO_SCHEMA": "TimeRange.1",
+                                    "duration": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 121.000008
+                                    },
+                                    "start_time": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 0.0
+                                    }
+                                },
+                                "available_image_bounds": null,
+                                "target_url": "VideoClips/shot_2.mp4"
+                            }
+                        },
+                        "active_media_reference_key": "DEFAULT_MEDIA"
+                    },
+                    {
+                        "STUDIO_SCHEMA": "Clip.2",
+                        "metadata": {
+                            "generate_type": "normal"
+                        },
+                        "name": "Shot_#### Start Frame\nCadru america...",
+                        "source_range": {
+                            "STUDIO_SCHEMA": "TimeRange.1",
+                            "duration": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 48.0
+                            },
+                            "start_time": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 0.0
+                            }
+                        },
+                        "effects": [],
+                        "markers": [],
+                        "enabled": true,
+                        "media_references": {
+                            "DEFAULT_MEDIA": {
+                                "STUDIO_SCHEMA": "ExternalReference.1",
+                                "metadata": {},
+                                "name": "",
+                                "available_range": {
+                                    "STUDIO_SCHEMA": "TimeRange.1",
+                                    "duration": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 121.000008
+                                    },
+                                    "start_time": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 0.0
+                                    }
+                                },
+                                "available_image_bounds": null,
+                                "target_url": "VideoClips/shot_3.mp4"
+                            }
+                        },
+                        "active_media_reference_key": "DEFAULT_MEDIA"
+                    }
+                ],
+                "kind": "Video"
+            },
+            {
+                "STUDIO_SCHEMA": "Track.1",
+                "metadata": {},
+                "name": "BGM",
+                "source_range": null,
+                "effects": [],
+                "markers": [],
+                "enabled": true,
+                "children": [
+                    {
+                        "STUDIO_SCHEMA": "Clip.2",
+                        "metadata": {
+                            "music_duration": 30,
+                            "music_prompt": "User-provided 30s operatic Latin track in Bb minor. Deep, melancholic tone with majestic orchestral swells. Perfect for driving the pacing and emSTUDIOnal crescendos of the epic historical romance without needing any additional music generation."
+                        },
+                        "name": "BGM_0_User-provided 30s op...",
+                        "source_range": {
+                            "STUDIO_SCHEMA": "TimeRange.1",
+                            "duration": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 720.0
+                            },
+                            "start_time": {
+                                "STUDIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 0.0
+                            }
+                        },
+                        "effects": [],
+                        "markers": [],
+                        "enabled": true,
+                        "media_references": {
+                            "DEFAULT_MEDIA": {
+                                "STUDIO_SCHEMA": "ExternalReference.1",
+                                "metadata": {},
+                                "name": "",
+                                "available_range": {
+                                    "STUDIO_SCHEMA": "TimeRange.1",
+                                    "duration": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 720.0
+                                    },
+                                    "start_time": {
+                                        "STUDIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 0.0
+                                    }
+                                },
+                                "available_image_bounds": null,
+                                "target_url": "user_file_2d2de4e3_analysis_safe.wav"
+                            }
+                        },
+                        "active_media_reference_key": "DEFAULT_MEDIA"
+                    }
+                ],
+                "kind": "Audio"
+            }
+        ]
+    }
+}

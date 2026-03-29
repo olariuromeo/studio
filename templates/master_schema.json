@@ -1,0 +1,36 @@
+{
+    "STUDIO_SCHEMA": "Timeline.1",
+    "name": "project_name_placeholder",
+    "metadata": {
+        "active_style_id": null,
+        "custom_style_reference": null,
+        "global_negative_prompt": "morphing, distortion, extra limbs, bad anatomy, text, watermark"
+    },
+    "project_metadata": {
+        "audio_analysis": {
+            "bpm": 0,
+            "key": null,
+            "mood": null,
+            "energy_profile": null
+        },
+        "shot_logic": null
+    },
+    "tracks": {
+        "STUDIO_SCHEMA": "Stack.1",
+        "name": "tracks",
+        "children": [
+            {
+                "STUDIO_SCHEMA": "Track.1",
+                "name": "Video",
+                "kind": "Video",
+                "children": []
+            },
+            {
+                "STUDIO_SCHEMA": "Track.1",
+                "name": "Audio",
+                "kind": "Audio",
+                "children": []
+            }
+        ]
+    }
+}

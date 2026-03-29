@@ -1,0 +1,14 @@
+{
+    "STUDIO_SCHEMA": "Timeline.1",
+    "global_config": {
+        "active_style_id": null,
+        "custom_style_reference": null, 
+        "global_negative_prompt": "morphing, distortion, extra limbs, bad anatomy"
+    },
+    "tracks": {
+        "children": [
+            { "name": "Video", "kind": "Video", "children": [] },
+            { "name": "Audio", "kind": "Audio", "children": [] }
+        ]
+    }
+}

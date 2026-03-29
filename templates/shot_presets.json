@@ -1,0 +1,48 @@
+{
+  "epic_romance": [
+    {
+      "type": "Establishing Wide",
+      "camera": "Slow Push Forward, eye-level",
+      "motion_intensity": 3,
+      "vibe": "Chiaroscuro, dramatic contrast, high fantasy",
+      "transformation": "Focus deepens on the subjects as the camera glides, enhancing the scale of the architecture.",
+      "logic": "Introduces the grand scale and atmosphere."
+    },
+    {
+      "type": "Action Tracking",
+      "camera": "Steady Track Forward, eye-level",
+      "motion_intensity": 5,
+      "vibe": "Opulent textures, rich gold and velvet",
+      "transformation": "Light shifts from warm candlelight to cool moonlight across the fabrics as the characters move.",
+      "logic": "Focuses on rhythmic movement and character presence."
+    },
+    {
+      "type": "Intimate Cinematic",
+      "camera": "Low Angle Push + Orbit",
+      "motion_intensity": 4,
+      "vibe": "Tragic romance, emotional focus, soft bokeh",
+      "transformation": "The camera rotates slightly to capture the intimate connection and facial expressions of the couple.",
+      "logic": "Creates the emotional peak and resolution."
+    }
+  ],
+  "anime_dynamic": [
+    {
+      "type": "Scenery Establishing",
+      "camera": "Wide Pan, High Angle",
+      "motion_intensity": 2,
+      "vibe": "Makoto Shinkai style, vibrant clouds, lens flares",
+      "transformation": "Clouds shift slowly, and light rays flicker through the scene.",
+      "logic": "Sets the vibrant, emotional tone."
+    }
+  ],
+  "cyberpunk_glitch": [
+    {
+      "type": "Cityscape Wide",
+      "camera": "Fast Drone Fly-through",
+      "motion_intensity": 9,
+      "vibe": "Neon aesthetic, rain, tech-noir",
+      "transformation": "Neon signs flicker and digital artifacts appear in the shadows.",
+      "logic": "Establishes a high-energy, futuristic environment."
+    }
+  ]
+}

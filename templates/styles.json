@@ -1,0 +1,17 @@
+{
+    "nolan_inspired": {
+        "name": "Nolan Inspired",
+        "tags": "Christopher Nolan style, IMAX 70mm, high contrast, practical effects look, cold blue and steel tones, cinematic realism, widescreen.",
+        "negative_tags": "cartoon, saturated, flat lighting, amateur"
+    },
+    "dark_gothic": {
+        "name": "Dark Gothic Cinematic",
+        "tags": "Guillermo del Toro style, dark fantasy, moody chiaroscuro, amber candlelight, deep shadows, ornate textures, gothic atmosphere.",
+        "negative_tags": "bright, sunny, modern, minimalist"
+    },
+    "makoto_shinkai": {
+        "name": "Makoto Shinkai Inspired",
+        "tags": "Anime Style, Digital Painting, high saturation, lens flares, detailed sky, vibrant clouds.",
+        "negative_tags": "realistic, photograph, grainy, dark"
+    }
+}
