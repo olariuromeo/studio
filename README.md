@@ -1,5 +1,5 @@
 <p align="center"\>
-    <a href="[https://github.com/coozila/video-studio/blob/main/LICENSE](https://www.google.com/search?q=https://github.com/coozila/video-studio/blob/main/LICENSE)" target="\_blank"\>\<img src="[https://img.shields.io/badge/license-MIT-7e22ce](https://www.google.com/search?q=https://img.shields.io/badge/license-MIT-7e22ce)" alt="License" /\>\</a\>
+    <a href="[https://github.com/coozila/video-studio/blob/dev/LICENSE](https://www.google.com/search?q=https://github.com/coozila/video-studio/blob/dev/LICENSE)" target="\_blank"\>\<img src="[https://img.shields.io/badge/license-MIT-7e22ce](https://www.google.com/search?q=https://img.shields.io/badge/license-MIT-7e22ce)" alt="License" /\>\</a\>
 </p\>
 
 > If you enjoy the project, please consider giving us a GitHub star ⭐️. Thank you\!
