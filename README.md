@@ -31,7 +31,7 @@ If you want to support our project and help us grow it, you can [become a sponso
 
   - [Core Project Structure](docs/project-structure)
   - [The Visual Production Flow](docs/how-the-visual-flow-works)
-  - [Detailed Installation Guide](docs/INSTALL.md) *(Coming Soon)*
+  - [Detailed Installation Guide](docs/INSTALL.md)
 
 ### Core Features
 
@@ -115,9 +115,9 @@ Copyright (C) 2009 - 2026 Coozila\! Team. Licensed under the **MIT License**.
 
 ### Licenses
 
-  - **Coozila\! Studio**: [MIT License](https://www.google.com/search?q=https://github.com/coozila/video-studio/blob/main/LICENSE)
-  - **Wan 2.2**: [Wan License](https://www.google.com/search?q=https://github.com/wan-video/Wan2.1/blob/main/LICENSE.md)
-  - **ComfyUI**: [GPL License](https://www.google.com/search?q=https://github.com/comfyanonymous/ComfyUI/blob/master/LICENSE)
+- **Coozila! Studio**: [MIT License](LICENSE) 
+- **Wan 2.2**: [Wan License](https://github.com/wan-video/Wan2.1/blob/main/LICENSE.md)
+- **ComfyUI**: [GPL License](https://github.com/comfyanonymous/ComfyUI/blob/master/LICENSE)
 
 ### Disclaimer
 
