@@ -1,76 +1,68 @@
-# 🛠️ Installation Guide: Coozila! Studio Canvas (Full Stack)
-
-```text
-# ----------------------------------------------------------------------------------#
-#                                                                                   #
-#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
-#   Coozila! Team    lab@coozila.com                                                #
-#   Studio Repo: https://github.com/kabballa/studio                                 #
-#                                                                                   #
-# ----------------------------------------------------------------------------------#
-```
+# 🛠️ Installation Guide: Coozila! Studio Canvas v4.0 (2026 Production)
 
 ## 1. System Prerequisites
+Optimized for **Ubuntu 24.04+**, **CUDA 12.5**, and **Python 3.11.9**.
 ```bash
-sudo apt update && sudo apt install -y ffmpeg git build-essential libssl-dev
+sudo apt update && sudo apt install -y ffmpeg git build-essential libssl-dev python3-dev
 ```
 
 ## 2. Step Zero: Clone the Ecosystem
-We need both the **Frontend (OpenWebUI)** and the **Worker (ComfyUI)**.
+We separate the **Frontend** and the **Worker** into distinct environments to prevent dependency conflicts between OpenWebUI and the heavy Wan 2.2/FLUX requirements.
 
 ```bash
-# Clone the Frontend
+# 1. Clone the Frontend
 git clone https://github.com/open-webui/open-webui.git
 cd open-webui
 
-# Clone the Worker (Outside or alongside OpenWebUI)
+# 2. Clone the Worker (Outside the frontend root)
 cd ..
 git clone https://github.com/comfyanonymous/ComfyUI.git
 ```
 
-## 3. Step One: Deploy Coozila! Studio (Frontend & Backend)
-We use your repository as a submodule in OpenWebUI for the interface, and we link the logic into ComfyUI for the processing.
+## 3. Step One: Deploy Coozila! Studio "The Glue"
+Your `studio` repository acts as both the interface provider and the custom processing node.
 
-### A. Frontend (OpenWebUI Static)
+### A. Frontend Integration (OpenWebUI)
 ```bash
 cd open-webui
 git submodule add https://github.com/kabballa/studio.git backend/open_webui/static/studio
 git submodule update --init --recursive
 ```
 
-### B. Backend (ComfyUI Custom Node)
-We install the same core logic into ComfyUI so it can understand the Studio's API commands.
+### B. Backend Integration (ComfyUI)
 ```bash
 cd ../ComfyUI/custom_nodes
 git clone https://github.com/kabballa/studio.git studio
 ```
 
-## 4. Environment & Version Management (asdf)
-We lock both environments to **Python 3.11.9**.
+## 4. Environment & CUDA 12.5 Management
+Configure the worker environment to utilize the **cu125** index for peak RTX 3080 performance.
 
 ```bash
-# Set versions
-asdf install python 3.11.9
-asdf local python 3.11.9
-
-# Setup Virtual Environment
+# Inside ComfyUI directory
 python -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 
-# Install dependencies for both shells
-pip install -r ../../open-webui/backend/requirements.txt
-pip install -r ../requirements.txt
-pip install librosa numpy aiohttp requests ffmpeg-python Pillow python-dotenv
+# Install Torch for CUDA 12.5 (2026 Stable)
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu125
+
+# Install Studio & Worker dependencies
+pip install -r requirements.txt
+pip install accelerate diffusers transformers insightface opencv-python pydub matplotlib pandas sam2
 ```
 
-## 5. Launch Sequence
-You need both "engines" running for the Studio to work.
+## 5. Model Deployment
+Ensure high-capacity models are placed in the correct paths before booting.
 
+* **FLUX.1 (Storyboard Engine):** `ComfyUI/models/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors`
+* **Wan 2.2 (Video Engine):** `ComfyUI/models/unet/wan2.2_s2v_14B_fp8_scaled.safetensors`
+
+## 6. Launch Sequence
 1.  **Start the Worker (ComfyUI):**
     ```bash
-    cd ComfyUI
-    python main.py --port 8188
+    # Mandatory: Use --lowvram to fit the 11GB FLUX model on the 10GB 3080
+    python main.py --port 8188 --enable-manager --lowvram --preview-method auto
     ```
 2.  **Start the Frontend (OpenWebUI):**
     ```bash
@@ -80,32 +72,13 @@ You need both "engines" running for the Studio to work.
 
 ---
 
-## 6. UI Activation: Coozila! Studio Canvas
-Go to **OpenWebUI > Workspace > Functions > Create New Function (Action)**:
+## 7. UI Activation: Coozila! Studio Bridge
+The activation logic is already included in your cloned repository. **Do not write new code for this step.**
 
-```python
-
-
-[
-  {
-    "id": "studio_canvas",
-    "name": "Studio Canvas",
-    "meta": {
-      "description": "Professional Studio Canvas for Video Orchestration (Wan 2.2) and Audio-Visual Sync.",
-      "type": "tool",
-      "manifest": {
-        "title": "Studio Canvas",
-        "author": "Coozila! Team",
-        "version": "3.6.0"
-      }
-    },
-    "content": "\"\"\"\ntitle: Studio Canvas\nauthor: Coozila! Team\nversion: 3.6.0\ndescription: Professional Studio Canvas for Wan 2.2 Orchestration and Audio-Visual Sync.\n\"\"\"\n\nimport os\nimport requests\nfrom pydantic import BaseModel, Field\n\nclass Tools:\n    def __init__(self):\n        # Default worker address\n        self.comfy_url = \"http://localhost:8188\"\n\n    def launch_studio_canvas(self) -> str:\n        \"\"\"\n        Launch the Studio Canvas interface.\n        Use this tool for WAV audio synchronization and AI video orchestration.\n        \"\"\"\n        return \"\"\"\n        <div style='padding: 20px; background: #080808; border: 1px solid #7e22ce; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(126, 34, 206, 0.3);'>\n            <h2 style='color: #a855f7; margin-top: 0; font-family: sans-serif; letter-spacing: 1px;'>🎬 STUDIO CANVAS</h2>\n            <p style='font-size: 11px; color: #555; margin-bottom: 20px;'>Universal Orchestrator Ready</p>\n            \n            <script>\n                if (!window.coozilaStudioStarted) {\n                    const s = document.createElement('script');\n                    s.src = '/static/studio/canvas.js';\n                    s.type = 'module';\n                    document.head.appendChild(s);\n                    window.coozilaStudioStarted = true;\n                }\n            </script>\n            \n            <button onclick='window.openStudioCanvas()' \n                style='background: #7e22ce; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 0 15px rgba(126, 34, 206, 0.3);'>\n                🚀 OPEN WORKSPACE\n            </button>\n        </div>\n        \"\"\"\n\n    def check_worker_status(self) -> str:\n        \"\"\"\n        Check if the ComfyUI worker is online.\n        \"\"\"\n        try:\n            r = requests.get(f'{self.comfy_url}/system_stats', timeout=2)\n            if r.status_code == 200:\n                return f'Worker ONLINE ({r.status_code})'\n            return 'Worker returned an error status.'\n        except:\n            return 'Worker OFFLINE (Check port 8188)'"
-  }
-]
-
-```
-
-## 7. Final Valve Check
-Open the **Valves** for the action and ensure `comfy_url` points to `http://127.0.0.1:8188`. The `studio` folder inside `custom_nodes` will now handle the incoming JSON from the Canvas.
+1.  Navigate to **OpenWebUI > Workspace > Functions**.
+2.  Select **Create New Function** (Action/Tool).
+3.  **Import/Copy** the logic directly from the local file:
+    * **File Path:** `backend/open_webui/static/studio/bridge.py`
+4.  Save the function. This bridge automatically connects the Canvas UI to your ComfyUI worker and keeps the production logic in sync with your local edits.
 
 ---
