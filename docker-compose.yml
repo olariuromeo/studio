@@ -1,0 +1,152 @@
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2025 Romulus Licensed under the MIT License.                      #
+#   Developer Contact    olariu_romeo@yahoo.it                                      #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+
+#   STACK NETWORK    ---------------------------------------------------------------#
+
+networks:                                                                           #
+
+  #   Private network for application services    ----------------------------------#
+
+  kabballa_private_network:
+    #
+    #   SSH command to create the Docker network: 
+    #   docker network create --driver bridge kabballa_private_network --subnet=172.16.0.0/16
+    #
+
+    external: true
+
+# ----------------------------------------------------------------------------------#
+
+#    STACK SERVICES    --------------------------------------------------------------#
+
+services:
+
+  # --------------------------------------------------------------------------------#
+
+  #    COOZILA STUDIO UI (OPEN WEBUI OVERLAY)    ------------------------------------#
+
+  coozila_studio_ui:
+    build:
+      context: ./apps/open-webui
+      dockerfile: Dockerfile
+    container_name: coozila.studio.ui
+    hostname: ${WEBUI_HOSTNAME:-localhost}
+    restart: always
+    
+    environment:
+      #
+      #    Coozila specific environment variables
+      #
+      - 'COMFYUI_BASE_URL=http://coozila_render_worker:8188'
+      - 'FRONTEND_BUILD_DIR=/app/backend/open_webui/frontend'
+      - 'WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-coozila_master_secret}'
+
+    ports:
+      #
+      #    Expose the Studio UI port
+      #
+      - "${LOCAL_LISTEN_ADDR:-127.0.0.1}:${WEBUI_PORT:-3000}:8080"
+
+    volumes:
+      #
+      #    Injected Coozila Core Logic (Python)
+      #
+      - ./core:/app/backend/open_webui/coozila/core
+
+      #
+      #    Injected Coozila Canvas (Built Svelte Template)
+      #
+      - ./build:/app/backend/open_webui/frontend
+
+      #
+      #    Volume for persistent WebUI data
+      #
+      - coozila_ui_data:/app/backend/data
+
+    entrypoint: 
+      #
+      #    Custom Boot: Install Core Requirements then start
+      #
+      - "/bin/bash"
+      - "-c"
+      - |
+        # Instalăm dependențele de backend (Python) care pot varia
+        pip install -r /app/backend/open_webui/studio/requirements.txt
+        
+        # Lansăm serverul (Presupunem că patch-urile de cod sunt deja făcute în imagine)
+        bash start.sh
+
+    networks:
+      - coozila_private_network
+      - kabballa_public_network
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    depends_on:
+      coozila_render_worker:
+        condition: service_healthy
+
+
+  # --------------------------------------------------------------------------------#
+
+  #    COOZILA RENDER WORKER (COMFYUI)    ------------------------------------------#
+
+  coozila_render_worker:
+    build:
+      context: ./apps/comfyui
+    container_name: coozila.render.worker
+    hostname: ${COMFYUI_HOSTNAME:-localhost}
+    restart: always
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/history"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    ports:
+      #
+      #    Expose ComfyUI for direct workflow debugging
+      #
+      - "${LOCAL_LISTEN_ADDR:-127.0.0.1}:${COMFYUI_PORT:-8188}:8188"
+
+    volumes:
+      #
+      #    Volume for AI Models (Wan 2.2 / FLUX)
+      #
+      - ./models:/app/models
+      
+      #
+      #    Volume for Render Output
+      #
+      - ./output:/app/output
+
+    networks:
+      - coozila_private_network
+
+# ----------------------------------------------------------------------------------#
+
+#    STACK VOLUMES    -----------------------------------------------------------------#
+
+volumes:
+
+    #
+    #    STACK WEBUI DATA STORAGE
+    #
+    coozila_ui_data:
+        driver: local
+
+# ----------------------------------------------------------------------------------#
