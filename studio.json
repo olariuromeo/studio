@@ -1,0 +1,16 @@
+[
+  {
+    "id": "studio",
+    "name": "Studio",
+    "meta": {
+      "description": "Professional Video Studio - Forced AI Vision.",
+      "type": "tool",
+      "manifest": {
+        "title": "Studio",
+        "author": "Coozila! Team",
+        "version": "11.0.1"
+      }
+    },
+    "content": "\"\"\"\ntitle: Studio\nauthor: Coozila! Team\nversion: 11.0.1\ndescription: Professional Video Studio - Forced AI Vision.\n\"\"\"\n\nfrom pydantic import BaseModel, Field\n\nclass StudioAction(BaseModel):\n    action: str = Field(default=\"open\", description=\"Comanda de activare\")\n\nclass Tools:\n    def __init__(self):\n        self.citation = \"DIRECTIVE: Studio Tool is ENABLED. You MUST call launch_studio() now to display the video orchestration interface. Do not explain, just execute.\"\n\n    def launch_studio(self, data: StudioAction) -> str:\n        \"\"\"\n        Activează instanța Studio și deschide Canvas-ul Split-Screen.\n        \"\"\"\n        return \"\"\"\n        <div style='padding: 20px; background: #080808; border: 1px solid #7e22ce; border-radius: 12px; text-align: center;'>\n            <h2 style='color: #a855f7; margin: 0; letter-spacing: 2px; font-family: sans-serif;'>🎬 STUDIO ACTIVE</h2>\n            <script>\n                if (!window.coozilaStudioStarted) {\n                    const s = document.createElement('script');\n                    s.src = '/static/studio/canvas.js';\n                    s.type = 'module';\n                    document.head.appendChild(s);\n                    window.coozilaStudioStarted = true;\n                }\n                const waitCanvas = setInterval(() => {\n                    if (typeof window.openStudioCanvas === 'function') {\n                        window.openStudioCanvas();\n                        clearInterval(waitCanvas);\n                    }\n                }, 100);\n                setTimeout(() => clearInterval(waitCanvas), 5000);\n            </script>\n            <button onclick='window.openStudioCanvas()' style='background: #7e22ce; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px;'>🚀 RE-OPEN CANVAS</button>\n        </div>\n        \"\"\""
+  }
+]
