@@ -26,9 +26,9 @@ If you want to support our project and help us grow it, you can [become a sponso
 
 ### Documentation
 
-  * [Core Project Structure](https://www.google.com/search?q=docs/project-structure.md)
-  * [The Visual Production Flow](https://www.google.com/search?q=docs/how-the-visual-flow-works.md)
-  * [Detailed Installation Guide (CUDA 12.5)](https://www.google.com/search?q=docs/INSTALL.md)
+  * [Core Project Structure](docs/project-structure.md)
+  * [The Visual Production Flow](docs/how-the-visual-flow-works.md)
+  * [Detailed Installation Guide (CUDA 12.5)](docs/INSTALL.md)
 
 -----
 

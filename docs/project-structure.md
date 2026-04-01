@@ -1,19 +1,9 @@
-# ----------------------------------------------------------------------------------#
-#                                                                                   #
-#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
-#   Coozila! Team    lab@coozila.com                                                #
-#                                                                                   #
-# ----------------------------------------------------------------------------------#
-# Document: project-structure.md
-# Description: System Architecture and Directory Map for Coozila! Studio.
-# ----------------------------------------------------------------------------------#
-
 # 🏗️ Coozila! Video Studio Architecture
 
 The ecosystem relies on an **Overlay & Orchestration** model:
 * **Open-WebUI**: The User Interface (Frontend Host).
 * **ComfyUI**: The Execution & Rendering Engine (Headless GPU Backend).
-* **Coozila! Studio**: The Orchestrator. It acts as the Canvas manager and Tool/API provider. Gemini/GPT prepares the data and triggers these APIs. **Crucially, Studio communicates with ComfyUI exclusively via headless JSON API payloads, receiving back paths to temporary `/output/` files.**
+* **Coozila! Studio**: The Orchestrator. It acts as the Canvas manager and Tool/API provider. Gemini/GPT prepares the data and triggers these APIs. **Crucially, Studio communicates with ComfyUI exclusively via headless JSON API payloads, receiving back paths to temporary `output/` files.**
 
 ## ⚙️ The 5 Phases of the Studio Orchestrator
 
@@ -41,27 +31,27 @@ The ecosystem relies on an **Overlay & Orchestration** model:
 
 ## 📂 Directory Map
 
-### 📁 Project Root (`~/data/dev/apps/coozila-studio/`)
+### 📁 Project Root
 * `docker-compose.yml` - Master service configuration (Volumes, Networks, GPU allocation).
 * `apply_patches.py` - Pre-build injection script.
 * `README.md` / `docs/` / `LICENSE` - Documentation.
 * `apps/` - Upstream submodules (Open-WebUI and ComfyUI).
 * `sessions/` - *(Directory)* **[Planned]** Active project state JSONs.
 * `exports/` - *(Directory)* **[Planned]** Final `.mp4` / `.mkv` master files.
-* `temp_assets/` - *(Directory)* **[Planned]** Shared volume for raw chunks, slices, and ComfyUI `/output/` links.
+* `temp_assets/` - *(Directory)* **[Planned]** Shared volume for raw chunks, slices, and ComfyUI `output/` links.
 
-### 🎨 Frontend Canvas (`/canvas/`)
+### 🎨 Frontend Canvas (`canvas/`)
 * `StudioCanvas.svelte` - Main visual timeline interface.
 * `studio_tab.js` - UI Injector.
 * `orchestrator.js` - Client-side logical flow.
 * `canvas.js` - Clip block drawing logic.
-* **`/api_bridges/`** - *(Directory)* **[In Development]** Frontend connectors to Backend Tools.
+* **`api_bridges/`** - *(Directory)* **[In Development]** Frontend connectors to Backend Tools.
   * `file_uploader_bridge.js` - **[Planned]** Handles asset ingestion and shared volume routing.
   * `status_bar.js` - **[Planned]** WebSocket listener for ComfyUI progress tracking.
-* **`/templates/`** - Data models:
+* **`templates/`** - Data models:
   * `master_schema.json`, `default_schema.json`, `styles.json`, `shot_presets.json`.
 
-### 🧠 Backend Core (`/core/studio/`)
+### 🧠 Backend Core (`core/studio/`)
 The Python API layer. Translates Canvas commands into FFmpeg executions or headless ComfyUI JSON API requests.
 
 * **Main Controllers:**
@@ -76,7 +66,7 @@ The Python API layer. Translates Canvas commands into FFmpeg executions or headl
   * `storyboard_generator.py` - **[Planned]** Builds JSON payloads for keyframe generation.
 
 * **Phase 2 & 4: ComfyUI Headless Execution Tools**
-  * `comfyui_api_gateway.py` - **[Planned]** The core WebSocket/HTTP client. Sends JSON, waits for execution, returns `/output/` paths.
+  * `comfyui_api_gateway.py` - **[Planned]** The core WebSocket/HTTP client. Sends JSON, waits for execution, returns paths to temporary files.
   * `payload_factory.py` - Assembles raw ComfyUI JSON workflows dynamically.
   * `wan_batch_worker.py` - **[Planned]** Manages queues for bulk video generation (WanVideo/LivePortrait).
   * `rife_interpolation_api.py` - **[Planned]** Submits the low-res master for 64 FPS interpolation.
@@ -90,8 +80,8 @@ The Python API layer. Translates Canvas commands into FFmpeg executions or headl
 * **Configs & Models:**
   * `config.py` - Environment variables (ComfyUI URL, paths).
   * `style_engine.py` & `shot_presets.py` - Prompt engineering logic.
-  * **`/comfy_workflows/`** - *(Directory)* **[Planned]** Contains the raw JSON API format exported from ComfyUI (e.g., `wan2.2_t2v_api.json`, `rife_api.json`). `payload_factory.py` reads these and injects dynamic variables.
+  * **`comfy_workflows/`** - *(Directory)* **[Planned]** Contains the raw JSON API format exported from ComfyUI (e.g., `wan2.2_t2v_api.json`, `rife_api.json`). `payload_factory.py` reads these and injects dynamic variables.
 
-### 🐳 Build & Patches (`/compose/`)
-* **`/open-webui/`** - `Dockerfile` and patch scripts.
-* **`/comfyui/`** - **[Planned]** Custom `Dockerfile` if specific Python packages (like PyDub/Librosa) need to run inside the ComfyUI container space for direct file access.
+### 🐳 Build & Patches (`compose/`)
+* **`open-webui/`** - `Dockerfile` and patch scripts.
+* **`comfyui/`** - **[Planned]** Custom `Dockerfile` if specific Python packages (like PyDub/Librosa) need to run inside the ComfyUI container space for direct file access.
