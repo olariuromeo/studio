@@ -1,3 +1,13 @@
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# Document: project-structure.md
+# Description: System Architecture and Directory Map for Coozila! Studio.
+# ----------------------------------------------------------------------------------#
+
 # 🏗️ Coozila! Video Studio Architecture
 
 The ecosystem relies on an **Overlay & Orchestration** model:
@@ -10,15 +20,16 @@ The ecosystem relies on an **Overlay & Orchestration** model:
 1. **Pre-Production (Studio Canvas)**
    * **Asset Ingestion**: `File_Uploader` stores reference images and video into shared volumes accessible by ComfyUI.
    * **Scene Breakdown & Scripting**: LLM Engine (Gemini 1.5 Pro) analyzes lyrics/audio, generating a Canvas table with Scenes, Shots, and Prompts.
-   * **Audio Splitting**: `Audio_Slicer_API` uses Librosa/PyDub to cut the track (e.g., "Eternisys") into 3-8 second chunks matching the table.
-   * **Storyboard Generation**: `ComfyUI_API_Gateway` sends prompt payloads to ComfyUI to generate Keyframes, displaying them on the Canvas for user approval.
+   * **Audio Splitting & Analysis**: `Audio_Slicer_API` uses Librosa/PyDub to cut the track into 3-8 second chunks and extract high-energy peaks for dynamic transitions.
+   * **Storyboard & Scenography Generation**: `ComfyUI_API_Gateway` sends prompt payloads to ComfyUI. Uses **Prompt-Relay** on static images to ensure visually locked environments (consistent world-building) before any video is generated.
 
 2. **AI Production (Generation Loops)**
-   * **Batch Video Generation**: `Wan_Batch_Worker` queues the approved keyframes + audio chunks and sends them to the ComfyUI API (WanVideo + LivePortrait nodes).
+   * **Dynamic Intra-Shot Routing**: Studio dynamically writes Prompt-Relay mathematical instructions based on audio peaks, allowing a single continuous video shot to evolve (e.g., lighting changes, morphing) exactly on the beat without hard cuts.
+   * **Batch Video Generation**: `Wan_Batch_Worker` queues the approved keyframes, dynamic relay scripts, and audio chunks, sending them to the ComfyUI API (WanVideo + LivePortrait nodes).
    * **Progress Tracking**: The `Status_Bar` interface monitors the rendering progress of the batches (e.g., 92 clips at 768px).
 
 3. **Offline Editing (Automated Assembly)**
-   * **Timeline Conform**: `FFmpeg_Stitcher` automatically concatenates the generated clips over the original audio track into a low-res video preview directly in the Canvas.
+   * **Timeline Conform**: `FFmpeg_Stitcher` automatically concatenates the generated clips (hard cuts) over the original audio track into a low-res video preview directly in the Canvas.
 
 4. **Finishing (Online Engine)**
    * **High Frame Rate (64 FPS)**: `RIFE_Interpolation_API` sends the low-res master back to ComfyUI for temporal interpolation.
@@ -62,11 +73,15 @@ The Python API layer. Translates Canvas commands into FFmpeg executions or headl
 
 * **Phase 1: Pre-Production Tools**
   * `asset_manager.py` - **[Planned]** Handles shared volume file saving.
-  * `audio_slicer_api.py` - **[Planned]** Librosa/PyDub logic for splitting audio into 3-8s chunks.
+  * `audio_slicer_api.py` - **[Planned]** Librosa/PyDub logic for splitting audio and mapping energy peaks.
   * `storyboard_generator.py` - **[Planned]** Builds JSON payloads for keyframe generation.
+  * `scenography_builder.py` - **[Planned]** Utilizes Prompt-Relay for image generation to lock background consistency across scenes based on Gemini's script.
 
 * **Phase 2 & 4: ComfyUI Headless Execution Tools**
   * `comfyui_api_gateway.py` - **[Planned]** The core WebSocket/HTTP client. Sends JSON, waits for execution, returns paths to temporary files.
+  * `dynamic_relay_composer.py` - **[Planned]** Translates audio beats and image assets into dynamic Prompt-Relay JSON arrays (frame-accurate morphing instructions).
+  * `intra_shot_relay.py` - **[Planned]** Injects the dynamic relay JSON arrays into Wan 2.2 payloads for seamless, continuous action takes.
+  * `latent_bridge_optimizer.py` - **[Planned]** Modulates transition speeds between relayed prompts based on music intensity.
   * `payload_factory.py` - Assembles raw ComfyUI JSON workflows dynamically.
   * `wan_batch_worker.py` - **[Planned]** Manages queues for bulk video generation (WanVideo/LivePortrait).
   * `rife_interpolation_api.py` - **[Planned]** Submits the low-res master for 64 FPS interpolation.
@@ -80,7 +95,7 @@ The Python API layer. Translates Canvas commands into FFmpeg executions or headl
 * **Configs & Models:**
   * `config.py` - Environment variables (ComfyUI URL, paths).
   * `style_engine.py` & `shot_presets.py` - Prompt engineering logic.
-  * **`comfy_workflows/`** - *(Directory)* **[Planned]** Contains the raw JSON API format exported from ComfyUI (e.g., `wan2.2_t2v_api.json`, `rife_api.json`). `payload_factory.py` reads these and injects dynamic variables.
+  * **`comfy_workflows/`** - *(Directory)* **[Planned]** Contains the raw JSON API format exported from ComfyUI (e.g., `wan2.2_relay_api.json`, `rife_api.json`). `payload_factory.py` reads these and injects dynamic variables.
 
 ### 🐳 Build & Patches (`compose/`)
 * **`open-webui/`** - `Dockerfile` and patch scripts.
