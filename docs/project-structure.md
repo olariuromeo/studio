@@ -12,86 +12,86 @@
 
 The ecosystem relies on an **Overlay & Orchestration** model:
 * **Open-WebUI**: The User Interface (Frontend Host).
-* **ComfyUI**: The Execution & Rendering Engine (GPU Backend).
-* **Coozila! Studio**: The Orchestrator (Canvas & API Tools) that bridges the UI and the engine, preparing data via LLM (Gemini) and managing the video timeline.
+* **ComfyUI**: The Execution & Rendering Engine (Headless GPU Backend).
+* **Coozila! Studio**: The Orchestrator. It acts as the Canvas manager and Tool/API provider. Gemini/GPT prepares the data and triggers these APIs. **Crucially, Studio communicates with ComfyUI exclusively via headless JSON API payloads, receiving back paths to temporary `/output/` files.**
 
 ## ⚙️ The 5 Phases of the Studio Orchestrator
 
 1. **Pre-Production (Studio Canvas)**
-   * *Asset Ingestion*: Uploading reference images and audio via Open-WebUI into ComfyUI shared volumes.
-   * *Scene Breakdown*: Gemini 1.5 Pro analyzes audio/lyrics and generates the Canvas table with Scenes, Shots, and Prompts.
-   * *Audio Splitting*: Automatic track slicing (3-8 second chunks) using Librosa algorithms.
-   * *Storyboard*: Generating keyframes via the ComfyUI API and validating them on the Canvas.
+   * **Asset Ingestion**: `File_Uploader` stores reference images and video into shared volumes accessible by ComfyUI.
+   * **Scene Breakdown & Scripting**: LLM Engine (Gemini 1.5 Pro) analyzes lyrics/audio, generating a Canvas table with Scenes, Shots, and Prompts.
+   * **Audio Splitting**: `Audio_Slicer_API` uses Librosa/PyDub to cut the track (e.g., "Eternisys") into 3-8 second chunks matching the table.
+   * **Storyboard Generation**: `ComfyUI_API_Gateway` sends prompt payloads to ComfyUI to generate Keyframes, displaying them on the Canvas for user approval.
+
 2. **AI Production (Generation Loops)**
-   * *Batch Video*: Sending approved keyframes and audio chunks to WanVideo / LivePortrait.
-   * *Progress Tracking*: Real-time status monitoring in the Open-WebUI interface.
+   * **Batch Video Generation**: `Wan_Batch_Worker` queues the approved keyframes + audio chunks and sends them to the ComfyUI API (WanVideo + LivePortrait nodes).
+   * **Progress Tracking**: The `Status_Bar` interface monitors the rendering progress of the batches (e.g., 92 clips at 768px).
+
 3. **Offline Editing (Automated Assembly)**
-   * *Timeline Conform*: Stitching generated clips over the original audio track (FFmpeg Stitcher) into a low-res video preview.
+   * **Timeline Conform**: `FFmpeg_Stitcher` automatically concatenates the generated clips over the original audio track into a low-res video preview directly in the Canvas.
+
 4. **Finishing (Online Engine)**
-   * *High Frame Rate*: 64 FPS temporal interpolation via RIFE in ComfyUI.
-   * *8K Tiled Upscale*: Ultimate Upscale processing with strict RAM/VRAM memory management to prevent out-of-memory crashes.
+   * **High Frame Rate (64 FPS)**: `RIFE_Interpolation_API` sends the low-res master back to ComfyUI for temporal interpolation.
+   * **8K Tiled Upscale**: `Ultimate_Upscale_API` runs the upscale process on 64x64 tiles. The `Memory_Check` module ensures the 64GB RAM limit is never exceeded during the 8K assembly.
+
 5. **Delivery (Final Master)**
-   * *Mastering & Export*: AV1/H.265 encoding (High Bitrate 200Mbps+) and delivering the direct download link.
+   * **Mastering & Export**: `Final_Encoder_API` uses FFmpeg with High Bitrate settings (200Mbps+) and AV1/H.265 codecs, providing a direct download link in the Open-WebUI interface.
 
 ---
 
 ## 📂 Directory Map
 
-The structure is highly modular, separating injection logic (`compose/`), frontend logic (`canvas/`), and the backend orchestrator (`core/`).
-
 ### 📁 Project Root (`~/data/dev/apps/coozila-studio/`)
-* `docker-compose.yml` - The supreme commander linking networks, volumes, and services.
-* `apply_patches.py` - Pre-build injection script (executed from the root context).
-* `README.md` / `docs/` / `LICENSE` - Project documentation.
-* `apps/` - Contains the clean upstream submodules (Open-WebUI and ComfyUI). **Strictly do not edit manually.**
-* `sessions/` - *(Directory)* **[Planned - Dynamic]** Will store active project states as JSON files.
-* `exports/` - *(Directory)* **[Planned - Dynamic]** The final destination for rendered `.mp4` master files.
-* `temp_chunks/` - *(Directory)* **[Planned - Dynamic]** Temporary storage for raw AI-generated video chunks before FFmpeg assembly.
+* `docker-compose.yml` - Master service configuration (Volumes, Networks, GPU allocation).
+* `apply_patches.py` - Pre-build injection script.
+* `README.md` / `docs/` / `LICENSE` - Documentation.
+* `apps/` - Upstream submodules (Open-WebUI and ComfyUI).
+* `sessions/` - *(Directory)* **[Planned]** Active project state JSONs.
+* `exports/` - *(Directory)* **[Planned]** Final `.mp4` / `.mkv` master files.
+* `temp_assets/` - *(Directory)* **[Planned]** Shared volume for raw chunks, slices, and ComfyUI `/output/` links.
 
 ### 🎨 Frontend Canvas (`/canvas/`)
-Contains the Svelte/JS logic injected into Open-WebUI to display the orchestrator's GUI.
-* `StudioCanvas.svelte` - Main Svelte component (The Visual Timeline Interface).
-* `studio_tab.js` - UI Injector (adds the "✨ Studio" button).
-* `orchestrator.js` - Manages client-side logical flow and state.
-* `audio_engine.js` - Controls waveform rendering and browser previews.
-* `canvas.js` - Logic for drawing and interacting with clip blocks.
-* `studio.json` - Local configuration for the frontend extension.
-* **`/components/`** - *(Directory)* **[In Development]** Modular Svelte components for a cleaner architecture.
-  * `TimelineTrack.svelte` - **[Planned]** Dedicated component for video/audio tracks.
-  * `ExportModal.svelte` - **[Planned]** UI for selecting codec, bitrate, and resolution before rendering.
-* **`/templates/`** - JSON data models for generation:
-  * `master_schema.json` - NLE timeline structure (Timeline.1).
-  * `default_schema.json` - Default settings for a new project.
-  * `styles.json` - Aesthetic prompt library.
-  * `shot_presets.json` - Camera movement blueprints (Orbit, Pan, Zoom).
-
-
+* `StudioCanvas.svelte` - Main visual timeline interface.
+* `studio_tab.js` - UI Injector.
+* `orchestrator.js` - Client-side logical flow.
+* `canvas.js` - Clip block drawing logic.
+* **`/api_bridges/`** - *(Directory)* **[In Development]** Frontend connectors to Backend Tools.
+  * `file_uploader_bridge.js` - **[Planned]** Handles asset ingestion and shared volume routing.
+  * `status_bar.js` - **[Planned]** WebSocket listener for ComfyUI progress tracking.
+* **`/templates/`** - Data models:
+  * `master_schema.json`, `default_schema.json`, `styles.json`, `shot_presets.json`.
 
 ### 🧠 Backend Core (`/core/studio/`)
-The Python logic acting as the API Gateway, Tool Provider for Gemini, and Orchestrator for ComfyUI. It has no GUI; it exclusively receives and returns JSON/Links.
-* `api.py` - Communication bridge (API routes injected into the Open-WebUI backend).
-* `video_studio_orchestrator.py` & `orchestrator.py` - The central brain managing project states and execution phases (1 to 5).
-* `tool_video_studio.py` - The Tool exposed to the LLM (Gemini) to trigger generation and assembly functions.
-* `audio_sync.py` - Audio slicing engine (Librosa) for BPM and tempo matching.
-* `payload_factory.py` - Assembles ComfyUI prompts (JSON graphs) from scene chunks.
-* `comfy_client.py` - Manages HTTP/WebSocket connections to the ComfyUI API.
-* `style_engine.py` & `style_analyzer.py` - Translates visual "vibes" into technical Wan 2.2 / FLUX prompts.
-* `schema_engine.py` & `schema_exporter.py` - Manipulates the video structure JSON for NLE export.
-* `media_processor.py` - FFmpeg wrapper for video assembly and exporting (Phases 3 and 5).
-* `memory_manager.py` - Monitors VRAM/RAM during the 8K upscaling process (Phase 4).
-* `config.py` - Environment variables and static paths.
-* `shot_presets.py` - Backend handler for camera motion parameters.
-* `__init__.py` - Python module initializer.
-* `requirements.txt` - Python-specific dependencies (librosa, ffmpeg-python, etc.).
-* `queue_manager.py` - **[In Development]** Will handle the reliable queueing of batch clip generation (e.g., 92+ clips) to prevent ComfyUI overload.
-* `error_recovery.py` - **[Planned]** Logic to catch ComfyUI timeouts or rendering failures and automatically retry specific chunks.
-* `llm_prompt_optimizer.py` - **[Planned]** An internal refiner to format Gemini's raw output strictly for LTX-2.3/Wan 2.2 syntax.
+The Python API layer. Translates Canvas commands into FFmpeg executions or headless ComfyUI JSON API requests.
+
+* **Main Controllers:**
+  * `video_studio_orchestrator.py` - Central state machine mapping the 5 phases.
+  * `api.py` - Open-WebUI backend route injector.
+  * `tool_video_studio.py` - Main Tool exposed to the LLM (Gemini/GPT).
+  * `llm_schema_parser.py` - **[Planned]** Parses LLM output into strict Canvas table structures.
+
+* **Phase 1: Pre-Production Tools**
+  * `asset_manager.py` - **[Planned]** Handles shared volume file saving.
+  * `audio_slicer_api.py` - **[Planned]** Librosa/PyDub logic for splitting audio into 3-8s chunks.
+  * `storyboard_generator.py` - **[Planned]** Builds JSON payloads for keyframe generation.
+
+* **Phase 2 & 4: ComfyUI Headless Execution Tools**
+  * `comfyui_api_gateway.py` - **[Planned]** The core WebSocket/HTTP client. Sends JSON, waits for execution, returns `/output/` paths.
+  * `payload_factory.py` - Assembles raw ComfyUI JSON workflows dynamically.
+  * `wan_batch_worker.py` - **[Planned]** Manages queues for bulk video generation (WanVideo/LivePortrait).
+  * `rife_interpolation_api.py` - **[Planned]** Submits the low-res master for 64 FPS interpolation.
+  * `ultimate_upscale_api.py` - **[Planned]** Submits the tiled 8K upscale job.
+  * `memory_check.py` - **[Planned]** Hardware monitor preventing 64GB RAM overflow during massive upscale/stitch tasks.
+
+* **Phase 3 & 5: Offline Editing & Delivery Tools (FFmpeg)**
+  * `ffmpeg_stitcher.py` - **[Planned]** Timeline Conform logic. Concatenates AI clips over the original audio.
+  * `final_encoder_api.py` - **[Planned]** AV1/H.265 Mastering script (200Mbps+ output).
+
+* **Configs & Models:**
+  * `config.py` - Environment variables (ComfyUI URL, paths).
+  * `style_engine.py` & `shot_presets.py` - Prompt engineering logic.
+  * **`/comfy_workflows/`** - *(Directory)* **[Planned]** Contains the raw JSON API format exported from ComfyUI (e.g., `wan2.2_t2v_api.json`, `rife_api.json`). `payload_factory.py` reads these and injects dynamic variables.
 
 ### 🐳 Build & Patches (`/compose/`)
-The recipe for building the modified Docker images (The Overlay).
-* **`/open-webui/`**
-  * `Dockerfile` - Extracts sources from `apps/`, applies root patches, and compiles the frontend.
-  * **`/src/routes/+layout.svelte`** - Specific Svelte injection point.
-  * **`/backend/open_webui/main.py`** - Backend injection point for API routing.
-* **`/comfyui/`** - *(Directory)* **[Planned]**
-  * `Dockerfile` - **[Planned]** Custom Coozila! environment build for ComfyUI to pre-install specific node dependencies (like `ffmpeg` or custom python modules) without polluting the host.
+* **`/open-webui/`** - `Dockerfile` and patch scripts.
+* **`/comfyui/`** - **[Planned]** Custom `Dockerfile` if specific Python packages (like PyDub/Librosa) need to run inside the ComfyUI container space for direct file access.
