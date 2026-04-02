@@ -43,6 +43,11 @@ cd "$WEBUI_DIR"
 source venv/bin/activate
 PORT=$STUDIO_PORT open-webui serve > ../../open-webui.log 2>&1 &
 
+# În install.sh, înainte de lansare:
+echo "🛑 Clearing port $STUDIO_PORT..."
+fuser -k ${STUDIO_PORT}/tcp || true
+pkill -f "open-webui serve" || true
+
 # Launch Backend (Python 3.11.9 context)
 echo "🎬 Engine running at port $ENGINE_PORT..."
 cd "$COMFY_DIR"
