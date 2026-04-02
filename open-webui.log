@@ -20,8 +20,8 @@ v0.8.12 - building the best AI user interface.
 
 https://github.com/open-webui/open-webui
 
-Fetching 30 files:   0%|          | 0/30 [00:00<?, ?it/s]Fetching 30 files: 100%|██████████| 30/30 [00:00<00:00, 72944.42it/s]
-Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 7894.98it/s]
+Fetching 30 files:   0%|          | 0/30 [00:00<?, ?it/s]Fetching 30 files: 100%|██████████| 30/30 [00:00<00:00, 44057.82it/s]
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 7555.19it/s]
 [1mBertModel LOAD REPORT[0m from: /home/coozila/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/snapshots/c9745ed1d9f207416be6d2e6f8de32d1f16199bf
 Key                     | Status     |  | 
 ------------------------+------------+--+-
@@ -30,9 +30,9 @@ embeddings.position_ids | UNEXPECTED |  |
 [3mNotes:
 - UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
 WARNI [open_webui.main] Frontend build directory not found at '/home/coozila/data/dev/apps/coozila-studio/apps/open-webui/backend/open_webui/frontend'. Serving API only.
-INFO:     Started server process [3313427]
+INFO:     Started server process [3357541]
 INFO:     Waiting for application startup.
-2026-04-02 17:24:46.168 | INFO     | open_webui.utils.logger:start_logger:192 - GLOBAL_LOG_LEVEL: INFO
-2026-04-02 17:24:46.168 | INFO     | open_webui.main:lifespan:631 - Installing external dependencies of functions and tools...
-2026-04-02 17:24:46.204 | INFO     | open_webui.utils.plugin:install_frontmatter_requirements:404 - No requirements found in frontmatter.
+2026-04-02 17:43:14.658 | INFO     | open_webui.utils.logger:start_logger:192 - GLOBAL_LOG_LEVEL: INFO
+2026-04-02 17:43:14.658 | INFO     | open_webui.main:lifespan:631 - Installing external dependencies of functions and tools...
+2026-04-02 17:43:14.671 | INFO     | open_webui.utils.plugin:install_frontmatter_requirements:404 - No requirements found in frontmatter.
 [Errno 98] error while attempting to bind on address ('0.0.0.0', 8080): address already in use
