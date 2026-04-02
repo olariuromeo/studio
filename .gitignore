@@ -1,0 +1,21 @@
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# Document: .gitignore
+# Description: Prevents upstream third-party apps, huge video outputs, and temporary 
+#              build files from polluting the Coozila! Studio repository.
+# ----------------------------------------------------------------------------------#
+
+# Ignorăm aplicațiile third-party (tot ce e clonat/submodule)
+apps/
+
+# Ignorăm volumele locale unde containerele scriu date / video / cache
+sessions/
+exports/
+temp_assets/
+
+# Securitate
+.env
