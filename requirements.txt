@@ -19,3 +19,11 @@ GitPython
 evalidate
 gguf
 openunmix
+termcolor
+pydub
+piexif
+ollama
+ftfy
+loralib
+scikit-image
+sageattention
