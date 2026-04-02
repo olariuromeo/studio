@@ -8,7 +8,7 @@
 # ----------------------------------------------------------------------------------#
 # Document: install.sh
 # Description: Coozila! Studio v4.0 - Full Local Stack (No-Docker).
-#              Orchestrates dual Python environments for Backend & Frontend.
+#              Fixed ComfyUI-Manager requirements pathing and dual-venv setup.
 # ----------------------------------------------------------------------------------#
 
 set -e
@@ -18,7 +18,7 @@ STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APPS_DIR="$STUDIO_ROOT/apps"
 
 echo "--------------------------------------------------------"
-echo "🚀 Coozila! Studio v4.0: Local Non-Docker Deployment"
+echo "🚀 Coozila! Studio v4.0: Local Deployment"
 echo "--------------------------------------------------------"
 
 # 1. Environment Loading
@@ -51,7 +51,7 @@ mkdir -p "$APPS_DIR"
 # --------------------------------------------------------
 # 5. FRONTEND SETUP (Open-WebUI Local)
 # --------------------------------------------------------
-echo "🌐 Step 4: Building Frontend Environment (Open-WebUI)..."
+echo "🌐 Step 2: Building Frontend Environment (Open-WebUI)..."
 cd "$WEBUI_DIR"
 asdf local python "$PYTHON_VERSION"
 
@@ -59,14 +59,13 @@ asdf local python "$PYTHON_VERSION"
 python -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
-# Install Open-WebUI via pip for local serving
 python -m pip install open-webui
 deactivate
 
 # --------------------------------------------------------
 # 6. BACKEND SETUP (ComfyUI Local)
 # --------------------------------------------------------
-echo "🔧 Step 5: Building Backend Environment (ComfyUI)..."
+echo "🔧 Step 3: Building Backend Environment (ComfyUI)..."
 cd "$COMFY_DIR"
 asdf local python "$PYTHON_VERSION"
 
@@ -80,16 +79,32 @@ python -m pip install torch torchvision torchaudio --extra-index-url https://dow
 
 echo "📥 Installing Engine Dependencies..."
 python -m pip install GitPython opencv-python-headless matplotlib librosa imageio-ffmpeg pydub ffmpeg-python \
-    accelerate diffusers transformers insightface pandas -r requirements.txt
-
-# ComfyUI-Manager
-if [ ! -d "custom_nodes/ComfyUI-Manager" ]; then
-    git clone https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager
+    accelerate diffusers transformers insightface pandas
+    
+# Install ComfyUI core requirements
+if [ -f "requirements.txt" ]; then
+    python -m pip install -r requirements.txt
 fi
-python -m pip install -r custom_nodes/ComfyUI-Manager/requirements.txt
 
 # --------------------------------------------------------
-# 7. FINAL LAUNCH ORCHESTRATION
+# 7. COMFYUI-MANAGER SETUP
+# --------------------------------------------------------
+echo "📥 Step 4: Configuring ComfyUI-Manager..."
+MANAGER_DIR="$COMFY_DIR/custom_nodes/ComfyUI-Manager"
+
+if [ ! -d "$MANAGER_DIR" ]; then
+    git clone https://github.com/ltdrdata/ComfyUI-Manager.git "$MANAGER_DIR"
+fi
+
+# Corrected path for manager requirements
+if [ -f "$MANAGER_DIR/requirements.txt" ]; then
+    python -m pip install -r "$MANAGER_DIR/requirements.txt"
+else
+    echo "⚠️ Warning: Manager requirements.txt not found at $MANAGER_DIR"
+fi
+
+# --------------------------------------------------------
+# 8. FINAL LAUNCH
 # --------------------------------------------------------
 echo "--------------------------------------------------------"
 echo "✅ LOCAL DEPLOYMENT COMPLETE"
@@ -101,7 +116,7 @@ cd "$WEBUI_DIR"
 source venv/bin/activate
 PORT=$STUDIO_PORT open-webui serve & 
 
-# Start ComfyUI in foreground (Main Process)
+# Start ComfyUI in foreground
 echo "🎬 Starting Backend Engine (Port $ENGINE_PORT)..."
 cd "$COMFY_DIR"
 source venv/bin/activate
