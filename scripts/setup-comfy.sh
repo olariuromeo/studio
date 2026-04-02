@@ -1,65 +1,93 @@
 #!/bin/bash
 # ----------------------------------------------------------------------------------#
-# Coozila! Studio v4.0 - Backend AI Stack (CUDA Optimized)
+# Coozila! Studio v4.0 - Backend AI Stack (Strict CUDA 12.x Fallback)
+# ----------------------------------------------------------------------------------#
+# Description: Automated environment setup for ComfyUI with hardware-aligned 
+#              PyTorch installation and Studio-specific dependency injection.
 # ----------------------------------------------------------------------------------#
 set -e
 
 echo "🔧 [COMFY] Initializing Backend AI Stack (Python $COMFY_PYTHON_VERSION)..."
 
-# 1. Aliniere asdf (Asigurăm mediul de Python corect)
+# 1. ASDF & Environment Alignment
+# Ensures the specific Python version defined in .env is used.
 cd "$COMFY_DIR"
 echo "python $COMFY_PYTHON_VERSION" > .tool-versions
 . "$HOME/.asdf/asdf.sh"
 asdf install
 asdf reshim
 
-# 2. Reset Total (Venv, Python Cache & Node Modules if any)
-echo "🧹 Cleaning up ComfyUI environment and Python bytecode cache..."
+# 2. Deep Clean (Anti-Corruption)
+# Removes previous virtual environments and recursive Python bytecode cache
+# to prevent import conflicts with Coozila! Core overrides.
+echo "🧹 Purging environment and Python bytecode cache (__pycache__)..."
 [ -d "venv" ] && rm -rf venv
-# Ștergere recursivă __pycache__ pentru a forța re-citirea nodurilor custom injectate
 find . -type d -name "__pycache__" -exec rm -rf {} +
 
-# Creare VENV nou
+# Initialize fresh Virtual Environment
 python -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 
 # --------------------------------------------------------
-# 3. Step A: Install Torch (STRICT CUDA ALIGNMENT)
+# 3. Step A: Install Torch (STRICT 12.x SEARCH)
 # --------------------------------------------------------
-# Transformăm 12.5 în cu125 pentru URL-ul de download corect
-CLEAN_CUDA_TAG="cu$(echo $CUDA_VERSION | tr -d '.')"
+# Prepare the target tag from .env (e.g., 12.5 -> cu125)
+TARGET_TAG="cu$(echo $CUDA_VERSION | tr -d '.')"
+FINAL_INDEX=""
 
-echo "📥 [COMFY] Installing Torch strictly for CUDA $CUDA_VERSION ($CLEAN_CUDA_TAG)..."
-# Folosim --index-url (exclusiv) și --no-cache-dir pentru a evita fallback-ul la cu130
+echo "🔍 Searching for the closest compatible PyTorch 12.x index..."
+
+# Define allowed versions in descending order. 
+# We strictly avoid falling back to CUDA 11.x to maintain RTX 30-series performance.
+POSSIBLE_VERSIONS=("$TARGET_TAG" "cu126" "cu124" "cu121" "cu120")
+
+for TAG in "${POSSIBLE_VERSIONS[@]}"; do
+    echo "📡 Testing remote index: https://download.pytorch.org/whl/$TAG/"
+    
+    # Perform a fast HTTP HEAD request to verify index existence
+    if curl --output /dev/null --silent --head --fail "https://download.pytorch.org/whl/$TAG/"; then
+        FINAL_INDEX="$TAG"
+        echo "🎯 [MATCH] Found available index: $FINAL_INDEX"
+        break
+    fi
+done
+
+# Critical check: Abort if no 12.x version is found on the PyTorch servers.
+if [ -z "$FINAL_INDEX" ]; then
+    echo "❌ [CRITICAL ERROR] No PyTorch CUDA 12.x index found."
+    echo "Installation aborted to prevent incompatible legacy fallback."
+    exit 1
+fi
+
+echo "📥 Installing Torch Stack from validated index: $FINAL_INDEX..."
+
+# Forced installation without cache to ensure binary alignment with hardware.
 pip install torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/$CLEAN_CUDA_TAG \
+    --index-url "https://download.pytorch.org/whl/$FINAL_INDEX" \
     --no-cache-dir
 
 # --------------------------------------------------------
-# 4. Step B: Install ComfyUI Core Requirements
+# 4. Step B: Core Requirements & Manager
 # --------------------------------------------------------
-echo "📥 [COMFY] Installing ComfyUI Core Requirements..."
+echo "📥 [COMFY] Installing Upstream Core Requirements..."
 pip install -r requirements.txt
 
-# --------------------------------------------------------
-# 5. Step C: Setup Manager (Pre-requisite for custom nodes)
-# --------------------------------------------------------
-echo "📥 [COMFY] Setting up ComfyUI-Manager..."
+# Ensure ComfyUI-Manager is present for node handling.
 if [ ! -d "custom_nodes/ComfyUI-Manager" ]; then
     git clone https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager
 fi
 pip install -r custom_nodes/ComfyUI-Manager/requirements.txt
 
 # --------------------------------------------------------
-# 6. Step D: Inject Coozila! Studio Fixes (FINAL OVERRIDE)
+# 5. Step C: Coozila! Studio Fixes (Final Injection)
 # --------------------------------------------------------
-echo "📥 [COMFY] Injecting Studio Fixes from Root Requirements..."
+# This step fixes ModuleNotFoundErrors (cv2, diffusers, pydub, ftfy, etc.)
+# by installing our centralized studio-root requirements.
 if [ -f "$STUDIO_ROOT/requirements.txt" ]; then
-    # Instalăm dependințele noastre suplimentare (cv2, diffusers, pydub, ftfy etc.)
-    # Rulăm la final pentru a asigura prezența modulelor critice
+    echo "📥 [COMFY] Injecting Studio-Specific Fixes from Root..."
     pip install -r "$STUDIO_ROOT/requirements.txt"
 fi
 
 deactivate
-echo "✅ [COMFY] Backend Engine Ready (CUDA $CLEAN_CUDA_TAG Aligned)."
+echo "✅ [COMFY] Backend Engine Ready (Locked on Hardware Index: $FINAL_INDEX)."
