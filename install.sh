@@ -38,21 +38,20 @@ sudo apt update && sudo apt install -y \
     ffmpeg git build-essential libssl-dev python3-dev curl jq \
     python3-venv libgl1-mesa-glx libglib2.0-0 unzip dirmngr gpg
 
-# 3. ASDF Runtime Manager Installation
+# 3. ASDF Runtime Manager Installation & Configuration
 echo "🐍 Step 2: Configuring ASDF Runtime Manager..."
 if [ ! -d "$HOME/.asdf" ]; then
     echo "📥 Installing asdf..."
     git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0
-    # Append to bashrc if not present
+    . "$HOME/.asdf/asdf.sh"
     grep -q "asdf.sh" ~/.bashrc || echo ". $HOME/.asdf/asdf.sh" >> ~/.bashrc
     grep -q "asdf.bash" ~/.bashrc || echo ". $HOME/.asdf/completions/asdf.bash" >> ~/.bashrc
-    . "$HOME/.asdf/asdf.sh"
 else
     echo "✅ asdf is already installed."
     . "$HOME/.asdf/asdf.sh"
 fi
 
-# Install Python plugin and version
+# Python plugin and version check
 if ! asdf plugin list | grep -q "python"; then
     echo "📥 Adding asdf python plugin..."
     asdf plugin add python
@@ -83,14 +82,14 @@ else
     echo "✅ ComfyUI repository found."
 fi
 
-# 5. Local Configuration & VENV
+# 5. Local Configuration & VENV Setup
 echo "🔧 Step 4: Building Local Python Environment..."
 cd "$COMFY_DIR"
 asdf local python "$PYTHON_VERSION"
 asdf reshim python
 
 if [ ! -d "$VENV_PATH" ]; then
-    echo "📦 Creating Virtual Environment..."
+    echo "📦 Creating Virtual Environment in apps/ComfyUI/venv..."
     python -m venv venv
 fi
 
@@ -100,7 +99,7 @@ source venv/bin/activate
 echo "🛠️ Step 5: Installing Studio & Engine Requirements..."
 python -m pip install --upgrade pip --quiet
 
-# Core AI Stack
+# Core AI Stack & Studio Tools
 python -m pip install --quiet \
     torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 \
     -r requirements.txt \
@@ -119,6 +118,7 @@ echo "✅ Coozila! Studio Setup Complete."
 echo "🎬 Launching Engine (Optimized for RTX 3080)..."
 echo "--------------------------------------------------------"
 
+cd "$COMFY_DIR"
 exec python main.py \
     --listen 0.0.0.0 \
     --port 8188 \
