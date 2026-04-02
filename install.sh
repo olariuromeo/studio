@@ -7,94 +7,78 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: install.sh
-# Description: Coozila! Studio v4.0 - Universal Dynamic Installer.
-#              All versions and tags are pulled from .env for strict consistency.
+# Description: Coozila! Studio v4.0 - Full Local Stack (No-Docker).
+#              Orchestrates dual Python environments for Backend & Frontend.
 # ----------------------------------------------------------------------------------#
 
 set -e
 
-# 0. Base Path
+# 0. Base Configuration
 STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APPS_DIR="$STUDIO_ROOT/apps"
 
 echo "--------------------------------------------------------"
-echo "🚀 Coozila! Studio v4.0: Dynamic Environment Boot"
+echo "🚀 Coozila! Studio v4.0: Local Non-Docker Deployment"
 echo "--------------------------------------------------------"
 
-# 1. Environment Guard & Loading
+# 1. Environment Loading
 if [ ! -f "$STUDIO_ROOT/.env" ]; then
-    echo "📝 Initializing .env from template..."
     cp "$STUDIO_ROOT/.env.example" "$STUDIO_ROOT/.env"
 fi
-
-# Export all variables from .env
 export $(grep -v '^#' "$STUDIO_ROOT/.env" | xargs)
 
-# Calculated Variables
-CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
+# Paths
 COMFY_DIR="$APPS_DIR/ComfyUI"
 WEBUI_DIR="$APPS_DIR/open-webui"
-VENV_PATH="$COMFY_DIR/venv"
+CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
 
-echo "📍 Target Python: $PYTHON_VERSION"
-echo "📍 Target CUDA: $CUDA_VERSION ($CUDA_TAG)"
-echo "📍 Target ComfyUI: $COMFY_TAG"
-echo "📍 Target WebUI: $WEBUI_TAG"
-
-# 2. System Core Dependencies
-echo "🔐 Step 1: Installing System Prerequisites..."
+# 2. System Core
+echo "🔐 Step 1: System Dependencies..."
 sudo apt update && sudo apt install -y \
     ffmpeg git build-essential libssl-dev python3-dev curl jq \
-    python3-venv libgl1-mesa-glx libglib2.0-0 unzip dirmngr gpg
+    python3-venv libgl1-mesa-glx libglib2.0-0 unzip
 
-# 3. ASDF Runtime Setup
-echo "🐍 Step 2: Configuring Python $PYTHON_VERSION via ASDF..."
-. "$HOME/.asdf/asdf.sh" || { echo "❌ ASDF not found."; exit 1; }
-
+# 3. ASDF Setup
+. "$HOME/.asdf/asdf.sh"
 asdf plugin add python || true
-if ! asdf list python | grep -q "$PYTHON_VERSION"; then
-    echo "📥 Installing Python $PYTHON_VERSION..."
-    asdf install python "$PYTHON_VERSION"
-fi
+asdf install python "$PYTHON_VERSION" || true
 
-# 4. Repository Synchronization (Strict Tag Checkout)
-echo "📦 Step 3: Syncing Stable Repositories..."
+# 4. Repo Sync (Tags)
 mkdir -p "$APPS_DIR"
+[ ! -d "$WEBUI_DIR" ] && git clone --branch $WEBUI_TAG https://github.com/open-webui/open-webui.git "$WEBUI_DIR"
+[ ! -d "$COMFY_DIR" ] && git clone --branch $COMFY_TAG https://github.com/comfyanonymous/ComfyUI.git "$COMFY_DIR"
 
-# Open-WebUI Sync
-if [ ! -d "$WEBUI_DIR" ]; then
-    git clone --branch $WEBUI_TAG https://github.com/open-webui/open-webui.git "$WEBUI_DIR"
-else
-    cd "$WEBUI_DIR" && git fetch --tags && git checkout $WEBUI_TAG && cd "$STUDIO_ROOT"
-fi
-
-# ComfyUI Sync
-if [ ! -d "$COMFY_DIR" ]; then
-    git clone --branch $COMFY_TAG https://github.com/comfyanonymous/ComfyUI.git "$COMFY_DIR"
-else
-    cd "$COMFY_DIR" && git fetch --tags && git checkout $COMFY_TAG && cd "$STUDIO_ROOT"
-fi
-
-# 5. Backend Environment (Total Purge for Version Matching)
-echo "🔧 Step 4: Building Backend Environment..."
-cd "$COMFY_DIR"
-
-if [ -d "$VENV_PATH" ]; then
-    echo "🧹 Purging existing VENV to match Python $PYTHON_VERSION..."
-    rm -rf "$VENV_PATH"
-fi
-
+# --------------------------------------------------------
+# 5. FRONTEND SETUP (Open-WebUI Local)
+# --------------------------------------------------------
+echo "🌐 Step 4: Building Frontend Environment (Open-WebUI)..."
+cd "$WEBUI_DIR"
 asdf local python "$PYTHON_VERSION"
-asdf reshim python
+
+[ -d "venv" ] && rm -rf venv
 python -m venv venv
 source venv/bin/activate
+python -m pip install --upgrade pip
+# Install Open-WebUI via pip for local serving
+python -m pip install open-webui
+deactivate
 
+# --------------------------------------------------------
+# 6. BACKEND SETUP (ComfyUI Local)
+# --------------------------------------------------------
+echo "🔧 Step 5: Building Backend Environment (ComfyUI)..."
+cd "$COMFY_DIR"
+asdf local python "$PYTHON_VERSION"
+
+[ -d "venv" ] && rm -rf venv
+python -m venv venv
+source venv/bin/activate
 python -m pip install --upgrade pip
 
-echo "📥 Installing AI Stack for $CUDA_TAG..."
+echo "📥 Installing Torch Stack ($CUDA_TAG)..."
 python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/$CUDA_TAG
 
-echo "🛠️ Installing Studio & Node Dependencies..."
+echo "📥 Installing Engine Dependencies..."
 python -m pip install GitPython opencv-python-headless matplotlib librosa imageio-ffmpeg pydub ffmpeg-python \
     accelerate diffusers transformers insightface pandas -r requirements.txt
 
@@ -104,17 +88,23 @@ if [ ! -d "custom_nodes/ComfyUI-Manager" ]; then
 fi
 python -m pip install -r custom_nodes/ComfyUI-Manager/requirements.txt
 
-# 6. Frontend Launch (Docker)
-echo "🐳 Step 5: Booting Frontend UI (Docker Compose)..."
-cd "$STUDIO_ROOT"
-docker compose up -d --build
-
-# 7. Final Execution
+# --------------------------------------------------------
+# 7. FINAL LAUNCH ORCHESTRATION
+# --------------------------------------------------------
 echo "--------------------------------------------------------"
-echo "✅ DEPLOYMENT COMPLETE"
+echo "✅ LOCAL DEPLOYMENT COMPLETE"
 echo "--------------------------------------------------------"
 
+# Start Open-WebUI in background
+echo "🚀 Starting Frontend (Port $STUDIO_PORT)..."
+cd "$WEBUI_DIR"
+source venv/bin/activate
+PORT=$STUDIO_PORT open-webui serve & 
+
+# Start ComfyUI in foreground (Main Process)
+echo "🎬 Starting Backend Engine (Port $ENGINE_PORT)..."
 cd "$COMFY_DIR"
+source venv/bin/activate
 exec python main.py \
     --listen 0.0.0.0 \
     --port $ENGINE_PORT \
