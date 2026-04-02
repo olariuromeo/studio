@@ -19,12 +19,19 @@ pip install --upgrade pip
 
 echo "📥 [COMFY] Installing Torch for $CUDA_TAG..."
 pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/$CUDA_TAG
+
+echo "📥 [COMFY] Installing ComfyUI core requirements..."
 pip install -r requirements.txt
+
+echo "📥 [COMFY] Injecting Coozila! Studio additional dependencies..."
+# Mergem înapoi în root-ul studioului pentru a citi requirements-ul nostru
+pip install -r "$STUDIO_ROOT/requirements.txt"
 
 # Manager Setup
 if [ ! -d "custom_nodes/ComfyUI-Manager" ]; then
     git clone https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager
 fi
 pip install -r custom_nodes/ComfyUI-Manager/requirements.txt
+
 deactivate
-echo "✅ [COMFY] Backend Engine Ready."
+echo "✅ [COMFY] Backend Engine Ready with All Dependencies."
