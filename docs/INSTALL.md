@@ -52,4 +52,3 @@ To activate the Interactive Canvas:
 ---
 
 **Copyright (C) 2009 - 2026 Coozila! Team. All rights reserved.**
-```
