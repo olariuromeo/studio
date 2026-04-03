@@ -5,51 +5,87 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-# Document: studio/scripts/setup-comfy.sh
-# Description: Local Environment Configuration for Coozila! Studio v4.0.
+# Document: scripts/setup-comfy.sh
+# Description: Self-contained ComfyUI Provisioning (Clone + VENV + Torch).
 # ----------------------------------------------------------------------------------#
 set -e
 
-echo "🔧 [COMFY] Initializing Backend AI Stack (Python $COMFY_PYTHON_VERSION)..."
+# 0. Context & Environment Loading
+STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -f "$STUDIO_ROOT/.env" ]; then
+    export $(grep -v '^#' "$STUDIO_ROOT/.env" | xargs)
+else
+    echo "❌ [ERROR] .env missing in $STUDIO_ROOT"
+    exit 1
+fi
 
-# 1. ASDF & Environment Alignment
+# Fallback values if not defined in .env
+COMFY_TAG="${COMFY_TAG:-master}"
+COMFY_PYTHON_VERSION="${COMFY_PYTHON_VERSION:-3.11.9}"
+CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
+
+echo "⚙️  [COMFY] Initializing Backend Engine (Tag: $COMFY_TAG)..."
+
+# ----------------------------------------------------------------------------------#
+# 1. Repository Synchronization
+# ----------------------------------------------------------------------------------#
+mkdir -p "$STUDIO_ROOT/apps"
+if [ ! -d "$COMFY_DIR" ]; then
+    echo "   -> Cloning fresh ComfyUI at branch/tag $COMFY_TAG..."
+    git clone --branch "$COMFY_TAG" https://github.com/comfyanonymous/ComfyUI.git "$COMFY_DIR"
+else
+    echo "   -> Folder exists. Forcing checkout for consistency: $COMFY_TAG..."
+    cd "$COMFY_DIR"
+    git fetch --all --tags
+    git checkout "tags/$COMFY_TAG" -f || git checkout "$COMFY_TAG" -f
+fi
+
+# ----------------------------------------------------------------------------------#
+# 2. Language & Environment Alignment (ASDF)
+# ----------------------------------------------------------------------------------#
 cd "$COMFY_DIR"
 echo "python $COMFY_PYTHON_VERSION" > .tool-versions
 . "$HOME/.asdf/asdf.sh"
 asdf install
 asdf reshim
 
-# 2. Virtual Environment Setup
-echo "🧹 [COMFY] Creating fresh VENV..."
+# 3. Virtual Environment Setup
+echo "🧹 [COMFY] Creating fresh VENV (Python $COMFY_PYTHON_VERSION)..."
 [ -d "venv" ] && rm -rf venv
 python -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 
 # ----------------------------------------------------------------------------------#
-# 3. Step A: Dynamic Torch Install (Driven by .env)
+# 4. PyTorch JIT Installation (CUDA Driven)
 # ----------------------------------------------------------------------------------#
-echo "📥 [MANUAL] Forcing PyTorch 2.5.1 with CUDA $CUDA_VERSION (Target URL tag: $CUDA_TAG)..."
+echo "📥 [COMFY] Forcing PyTorch 2.5.1 with CUDA URL Tag: $CUDA_TAG..."
 
-# Remove any previous torch installations to prevent conflicts and ensure a clean slate
+# Clean old versions
 pip uninstall torch torchvision torchaudio -y || true
 
-# Install the verified version directly from the official repository using the dynamic tag
+# Direct Install from WHL index
 pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
     --index-url "https://download.pytorch.org/whl/$CUDA_TAG" \
     --no-cache-dir
 
 # ----------------------------------------------------------------------------------#
-# 4. Official Setup (Requirements & Manager)
+# 5. Core Requirements & Custom Nodes (Manager)
 # ----------------------------------------------------------------------------------#
 echo "📥 [COMFY] Installing Official Requirements..."
 [ -f "requirements.txt" ] && pip install -r requirements.txt
 
-# INSTALL MANAGER (As per official documentation)
+# --- Manager Installation ---
+MANAGER_DIR="$COMFY_DIR/custom_nodes/ComfyUI-Manager"
+if [ ! -d "$MANAGER_DIR" ]; then
+    echo "📦 [COMFY] Cloning ComfyUI-Manager..."
+    git clone https://github.com/ltdrdata/ComfyUI-Manager.git "$MANAGER_DIR"
+fi
+
 echo "📦 [COMFY] Installing Manager dependencies..."
-if [ -f "manager_requirements.txt" ]; then
-    pip install -r manager_requirements.txt
+if [ -f "$MANAGER_DIR/requirements.txt" ]; then
+    pip install -r "$MANAGER_DIR/requirements.txt"
 fi
 
 deactivate
-echo "✅ [COMFY] Environment ready. Torch locked on CU$CUDA_TAG."
+echo "✅ [COMFY] Environment ready. Backend is fully provisioned and locked."

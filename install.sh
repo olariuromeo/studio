@@ -6,9 +6,19 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: studio/install.sh
-# Description: Local Environment Configuration for Coozila! Studio v4.0.
+# Description: Resilient Master Orchestrator for Coozila! Studio v4.1.
+# Logic: Nuclear Cleanup -> App Setup -> Studio/OTIO Injection -> Auto-Launch.
 # ----------------------------------------------------------------------------------#
-set -e
+
+# Disable exit on error to allow final reporting
+set +e 
+
+# UI Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
 # 0. Global Context
 export STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,158 +26,138 @@ export APPS_DIR="$STUDIO_ROOT/apps"
 export WEBUI_DIR="$APPS_DIR/open-webui"
 export COMFY_DIR="$APPS_DIR/ComfyUI"
 
+FAILED_MODULES=()
+
+# Execution Wrapper
+run_step() {
+    local script_path=$1
+    local step_name=$2
+    echo -e "\n${BLUE}🚀 [EXECUTING] $step_name...${NC}"
+    
+    if [ -f "$script_path" ]; then
+        chmod +x "$script_path"
+        "$script_path"
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ $step_name: SUCCESS${NC}"
+        else
+            echo -e "${RED}❌ $step_name: FAILED${NC}"
+            FAILED_MODULES+=("$step_name")
+        fi
+    else
+        echo -e "${RED}❌ Script missing: $script_path${NC}"
+        FAILED_MODULES+=("$step_name (File Not Found)")
+    fi
+}
+
 # 1. Load Environment & Tooling
+echo -e "${BLUE}⚙️  Loading Coozila! Environment Variables...${NC}"
 [ ! -f ".env" ] && cp .env.example .env
 export $(grep -v '^#' .env | xargs)
 export CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
 
 # Ensure ASDF plugins are ready
-. "$HOME/.asdf/asdf.sh"
+. "$HOME/.asdf/asdf.sh" 2>/dev/null || true
 asdf plugin add python || true
 asdf plugin add nodejs || true
 
 # ----------------------------------------------------------------------------------#
-# 1.5. SCORCHED EARTH CLEANUP (Nuclear Option)
+# 1.5. SCORCHED EARTH CLEANUP (Critical for Clean Builds)
 # ----------------------------------------------------------------------------------#
-echo "☢️ [GLOBAL] Executing Pre-Install Nuclear Cleanup..."
+echo -e "${YELLOW}☢️  [GLOBAL] Starting Nuclear Cleanup (Scorched Earth Mode)...${NC}"
+
+# Kill any blocking processes
 deactivate 2>/dev/null || true
+fuser -k ${STUDIO_PORT}/tcp >/dev/null 2>&1 || true
+fuser -k ${ENGINE_PORT}/tcp >/dev/null 2>&1 || true
+pkill -f "open-webui" >/dev/null 2>&1 || true
 
-echo "   -> Destroying old VENVs to prevent cross-contamination..."
-rm -rf "$COMFY_DIR/venv"
-rm -rf "$WEBUI_DIR/venv"
+# Purge Environments and Frontend Artifacts
+echo "   -> Wiping VENVs and Node.js artifacts..."
+rm -rf "$COMFY_DIR/venv" "$WEBUI_DIR/venv" "$WEBUI_DIR/backend/venv"
+rm -rf "$WEBUI_DIR/.svelte-kit" "$WEBUI_DIR/node_modules"
+rm -f "$WEBUI_DIR/package-lock.json"
 
-echo "   -> Wiping global PIP cache (~/.cache/pip) to force clean builds..."
-rm -rf ~/.cache/pip
-rm -rf /tmp/pip-*
-
-echo "   -> Hunting down and destroying all Node.js caches (node_modules)..."
-find "$STUDIO_ROOT" -type d -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
-
-echo "   -> Hunting down and destroying all __pycache__ folders and compiled files..."
+# Purge Python Caches
+echo "   -> Destroying __pycache__ and Pip artifacts..."
+rm -rf ~/.cache/pip /tmp/pip-*
 find "$STUDIO_ROOT" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 find "$STUDIO_ROOT" -type f -name "*.py[co]" -delete 2>/dev/null || true
 
-echo "✅ [GLOBAL] Environment is completely sterile. Proceeding with sync..."
+echo -e "${GREEN}✅ Environment is sterile. Starting fresh deployment...${NC}"
 
 # ----------------------------------------------------------------------------------#
-# 2. Repo Sync & Strict Tag Enforcement
+# PHASE 1: SEQUENTIAL INSTALLATION
 # ----------------------------------------------------------------------------------#
-mkdir -p "$APPS_DIR"
-echo "📦 Syncing Strict Stable Tags from .env (WebUI: $WEBUI_TAG | Comfy: $COMFY_TAG)..."
 
-# --- Open WebUI Sync ---
-if [ ! -d "$WEBUI_DIR" ]; then
-    echo "   -> Cloning fresh Open WebUI at tag $WEBUI_TAG..."
-    git clone --branch $WEBUI_TAG https://github.com/open-webui/open-webui.git "$WEBUI_DIR"
-else
-    echo "   -> Open WebUI folder exists. Forcing tag checkout: $WEBUI_TAG..."
+# 1. Setup WebUI Core (Repos & VENV)
+run_step "./scripts/setup-webui.sh" "WebUI Base Layer"
+
+# 2. Inject Studio Overlays (Canvas, Core, Compose Patches)
+run_step "./scripts/setup-studio.sh" "Studio Integration"
+
+# 3. Install OTIO Engine (Timeline Backbone)
+run_step "./scripts/setup-otio.sh" "OTIO Engine"
+
+# 4. Setup ComfyUI Independent Engine
+run_step "./scripts/setup-comfy.sh" "Backend Engine (ComfyUI)"
+
+# 5. Setup Wan 2.2 Acceleration Layer
+run_step "./scripts/setup-wan2.sh" "Wan 2.2 Acceleration"
+
+# ----------------------------------------------------------------------------------#
+# PHASE 2: THE FINAL SEAL (BUILD)
+# ----------------------------------------------------------------------------------#
+# Now that EVERY component is in place, we compile the WebUI.
+echo -e "\n${BLUE}🏗️  [BUILD] Executing Final WebUI Production Build...${NC}"
+if [ -d "$WEBUI_DIR/venv" ]; then
     cd "$WEBUI_DIR"
-    git fetch --all --tags
-    git checkout tags/$WEBUI_TAG -f
-    cd "$STUDIO_ROOT"
-fi
-
-# --- ComfyUI Sync ---
-if [ ! -d "$COMFY_DIR" ]; then
-    echo "   -> Cloning fresh ComfyUI at tag $COMFY_TAG..."
-    git clone --branch $COMFY_TAG https://github.com/comfyanonymous/ComfyUI.git "$COMFY_DIR"
-else
-    echo "   -> ComfyUI folder exists. Forcing tag checkout: $COMFY_TAG..."
-    cd "$COMFY_DIR"
-    git fetch --all --tags
-    git checkout tags/$COMFY_TAG -f
-    cd "$STUDIO_ROOT"
-fi
-
-echo "📂 Overwriting Upstream with Coozila! Custom Core..."
-cp -rv "$STUDIO_ROOT/canvas/"* "$WEBUI_DIR/src/"
-cp -rv "$STUDIO_ROOT/core/"* "$WEBUI_DIR/backend/"
-
-# Ensure all scripts are executable
-chmod +x scripts/*.sh
-
-# 1. Setup Frontend/WebUI
-./scripts/setup-webui.sh
-
-# 2. Setup ComfyUI Base Environment
-# This creates the VENV and installs core Pytorch + Nodes
-./scripts/setup-comfy.sh
-
-# 3. Setup Wan 2.2 High-Performance Layer
-# This injects Flash-Attention, SAM2, and specific Wan transformers 
-# into the same VENV created by ComfyUI
-./scripts/setup-wan2.sh
-
-# 4. Setup Coozila! Studio Core Dependencies
-# Installs custom APIs, audio processing (Librosa/PyDub), and FFmpeg tools
-./scripts/setup-studio.sh
-
-# 5. Setup OpenTimelineIO Engine (The Backbone)
-./scripts/setup-otio.sh
-
-# ----------------------------------------------------------------------------------#
-# 5. FINAL GLOBAL SYNC (The Fixer)
-# ----------------------------------------------------------------------------------#
-# We run this AFTER all specialized scripts to ensure the shared VENV 
-# matches the Studio's master requirements list.
-echo "🛠️  Step 4: Synchronizing Global Studio Requirements..."
-
-if [ -d "$COMFY_DIR/venv" ]; then
-    source "$COMFY_DIR/venv/bin/activate"
-    if [ -f "$STUDIO_ROOT/requirements.txt" ]; then
-        echo "📥 [SYNC] Injecting missing dependencies from root requirements..."
-        # Using --no-cache-dir to ensure we don't install outdated cached versions
-        pip install -r "$STUDIO_ROOT/requirements.txt" --no-cache-dir
+    source venv/bin/activate
+    # Hatch build: Compiles Svelte with all injected overlays.
+    pip install -e . --no-cache-dir
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ FINAL BUILD FAILED!${NC}"
+        FAILED_MODULES+=("WebUI Production Build")
     fi
     deactivate
-else
-    echo "⚠️  [WARNING] Comfy VENV not found. Skipping global sync."
+    cd "$STUDIO_ROOT"
 fi
 
-echo "✅ [INSTALLER] All specialized stacks and global fixes have been synchronized."
-
 # ----------------------------------------------------------------------------------#
-# 6. MULTI-PROCESS LAUNCH
+# PHASE 4: REPORT & LAUNCH
 # ----------------------------------------------------------------------------------#
-echo "🚀 Coozila! Studio v4.0 starting up..."
+echo -e "\n${BLUE}==========================================================================${NC}"
+if [ ${#FAILED_MODULES[@]} -eq 0 ]; then
+    echo -e "${GREEN}✨ COOZILA! STUDIO v4.1: INSTALLATION SUCCESSFUL!${NC}"
+    echo -e "${BLUE}--------------------------------------------------------------------------${NC}"
+    echo -e " 🌐 Frontend (WebUI) : ${GREEN}http://localhost:$STUDIO_PORT${NC}"
+    echo -e " 🎬 Backend (ComfyUI): ${GREEN}http://localhost:$ENGINE_PORT${NC}"
+    echo -e "${BLUE}--------------------------------------------------------------------------${NC}"
+else
+    echo -e "${RED}⚠️  INSTALLATION WARNING: Some modules failed:${NC}"
+    for module in "${FAILED_MODULES[@]}"; do echo -e "  - ${RED}$module${NC}"; done
+fi
+echo -e "${BLUE}==========================================================================${NC}\n"
 
-# CLEANUP: Kill any existing processes on the target ports
-echo "🧹 Clearing ports $STUDIO_PORT and $ENGINE_PORT..."
-fuser -k ${STUDIO_PORT}/tcp >/dev/null 2>&1 || true
-fuser -k ${ENGINE_PORT}/tcp >/dev/null 2>&1 || true
-pkill -f "open-webui serve" >/dev/null 2>&1 || true
+# Launch logic
+if [ -d "$WEBUI_DIR/venv" ] && [ -d "$COMFY_DIR/venv" ]; then
+    echo -e "${BLUE}🚀 Starting services now...${NC}"
+    
+    # 1. Start WebUI (Background)
+    cd "$WEBUI_DIR"
+    source venv/bin/activate
+    PORT=$STUDIO_PORT open-webui serve > "$STUDIO_ROOT/open-webui.log" 2>&1 &
+    deactivate
 
-# Launch Frontend (WebUI)
-echo "🌐 Starting Frontend on port $STUDIO_PORT..."
-cd "$WEBUI_DIR"
-source venv/bin/activate
-PORT=$STUDIO_PORT open-webui serve > "$STUDIO_ROOT/open-webui.log" 2>&1 &
-deactivate
-
-# Display the Control Panel Dashboard
-echo ""
-echo "=========================================================================="
-echo " 🎉 COOZILA! STUDIO v4.0 IS ONLINE! "
-echo "=========================================================================="
-echo " 🌐 Frontend (Open WebUI) : http://localhost:$STUDIO_PORT"
-echo " 🎬 Backend  (ComfyUI)    : http://localhost:$ENGINE_PORT"
-echo "=========================================================================="
-echo " 📜 WebUI logs are running in the background and saved to: open-webui.log"
-echo " ⏳ ComfyUI logs are streaming below (Press CTRL+C to stop all services)."
-echo "=========================================================================="
-echo ""
-
-# Launch Backend (ComfyUI + Wan 2.2 Layer)
-echo "🎬 Starting Engine on port $ENGINE_PORT..."
-cd "$COMFY_DIR"
-source venv/bin/activate
-
-exec python main.py \
-    --listen 0.0.0.0 \
-    --port $ENGINE_PORT \
-    --enable-manager \
-    --$VRAM_MODE \
-    --enable-dynamic-vram \
-    --async-offload \
-    --mmap-torch-files \
-    --preview-method auto
+    # 2. Start ComfyUI (Foreground) - Acesta este "Congu"
+    cd "$COMFY_DIR"
+    source venv/bin/activate
+    
+    # Folosim variabila $ENGINE_PORT din .env
+    exec python main.py \
+        --listen 0.0.0.0 \
+        --port $ENGINE_PORT \
+        --enable-manager \
+        --$VRAM_MODE \
+        --async-offload \
+        --preview-method auto
+fi

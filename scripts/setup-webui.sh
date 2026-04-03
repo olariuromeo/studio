@@ -5,43 +5,41 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-# Document: studio/script/setup-webui.sh
-# Description: Local Environment Configuration for Coozila! Studio v4.0.
+# Document: scripts/setup-webui.sh
+# Description: Minimalist Orchestrator for WebUI. Delegates to Studio/OTIO scripts.
 # ----------------------------------------------------------------------------------#
 set -e
-set -e
 
-echo "🌐 [WEBUI] Initializing Frontend Environment (Python $WEBUI_PYTHON_VERSION)..."
+# 0. Context & Environment Loading
+STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+[ -f "$STUDIO_ROOT/.env" ] && export $(grep -v '^#' "$STUDIO_ROOT/.env" | xargs)
 
-# 1. Navigare în folderul aplicației
+WEBUI_DIR="$STUDIO_ROOT/apps/open-webui"
+WEBUI_TAG="${WEBUI_TAG:-main}"
+
+echo "🌐 [WEBUI] Starting Modular Setup Phase..."
+
+# 1. Repository Sync
+mkdir -p "$STUDIO_ROOT/apps"
+if [ ! -d "$WEBUI_DIR" ]; then
+    echo "   -> Cloning fresh Open-WebUI ($WEBUI_TAG)..."
+    git clone --branch "$WEBUI_TAG" https://github.com/open-webui/open-webui.git "$WEBUI_DIR"
+else
+    cd "$WEBUI_DIR" && git fetch --all && git checkout "tags/$WEBUI_TAG" -f
+fi
+
+# 2. Environment Alignment (ASDF)
 cd "$WEBUI_DIR"
-
-# 2. Ștergere radicală (Nuke mode)
-echo "🧹 Deep cleaning Venv, Node Modules and Python cache..."
-rm -rf venv
-rm -rf node_modules
-rm -f package-lock.json
-# Ștergere recursivă __pycache__ pentru a asigura instalarea 'editable' curată
-find . -type d -name "__pycache__" -exec rm -rf {} +
-
-# 3. Aliniere asdf (citind din .env-ul exportat de master)
 echo "python $WEBUI_PYTHON_VERSION" > .tool-versions
 echo "nodejs $STUDIO_NODE_VERSION" >> .tool-versions
-
 . "$HOME/.asdf/asdf.sh"
-asdf install
-asdf reshim
+asdf install && asdf reshim
 
-# 4. Creare VENV proaspăt
+# 3. Virtual Environment (Fundația)
+echo "🐍 [WEBUI] Creating Python VENV..."
 python -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 
-# 5. Build Hook Execution
-echo "🏗️ [WEBUI] Executing Hatch Build Hook (npm install + npm run build)..."
-# Pip install -e . va detecta lipsa node_modules și va declanșa procesul de compilare 
-# pentru fișierele noastre injectate în src/
-pip install -e .
-
-echo "✅ [WEBUI] Frontend build complete and environment isolated."
 deactivate
+echo "✅ [WEBUI] Base environment ready. Waiting for injection..." 

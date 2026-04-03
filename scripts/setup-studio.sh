@@ -6,50 +6,81 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: scripts/setup-studio.sh
-# Description: Local Environment Configuration for Coozila! Studio v4.0.
+# Description: Professional Tier Orchestrator for Studio & Custom WebUI Patches.
 # ----------------------------------------------------------------------------------#
 set -e
 
-echo "🛠️  [STUDIO SYNC] Synchronizing Global Studio & Core Requirements..."
+# 0. Context Alignment
+STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WEBUI_DIR="$STUDIO_ROOT/apps/open-webui"
+COMFY_DIR="$STUDIO_ROOT/apps/ComfyUI"
+COMPOSE_WEBUI="$STUDIO_ROOT/compose/open-webui"
 
-# 0. Ensure context is set (in case the script is run standalone)
-STUDIO_ROOT="${STUDIO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-COMFY_DIR="${COMFY_DIR:-$STUDIO_ROOT/apps/ComfyUI}"
-WEBUI_DIR="${WEBUI_DIR:-$STUDIO_ROOT/apps/open-webui}"
+echo -e "\n🛠️  [STUDIO SETUP] Initializing Multi-Layer Injection..."
 
-# --- 1. ComfyUI VENV Synchronization ---
-if [ -d "$COMFY_DIR/venv" ]; then
-    echo "   -> Activating ComfyUI VENV..."
-    source "$COMFY_DIR/venv/bin/activate"
-    
-    if [ -f "$STUDIO_ROOT/requirements.txt" ]; then
-        echo "      📥 [SYNC] Injecting Root dependencies..."
-        pip install -r "$STUDIO_ROOT/requirements.txt" --no-cache-dir
+# Generic deployment function
+deploy() {
+    local src="$1"
+    local dest="$2"
+    local label="$3"
+
+    if [ -d "$src" ]; then
+        echo "   -> [DEPLOY] Injecting $label into $(basename "$dest")..."
+        mkdir -p "$dest"
+        # -r (recursive), -v (verbose), -u (update/overwrite if newer)
+        cp -rvu "$src/"* "$dest/" 2>/dev/null
+    else
+        echo "   -> [SKIP] $label source folder missing ($src)."
     fi
-    
-    if [ -f "$STUDIO_ROOT/core/requirements.txt" ]; then
-        echo "      🧠 [SYNC] Injecting CORE Module dependencies into ComfyUI..."
-        pip install -r "$STUDIO_ROOT/core/requirements.txt" --no-cache-dir
-    fi
-    
-    deactivate
+}
+
+# ----------------------------------------------------------------------------------#
+# PHASE 1: STUDIO FEATURE INJECTION
+# ----------------------------------------------------------------------------------#
+# These are the base studio components (Canvas UI and Core API logic)
+deploy "$STUDIO_ROOT/canvas" "$WEBUI_DIR/src" "Studio Canvas Frontend"
+deploy "$STUDIO_ROOT/core" "$WEBUI_DIR/backend" "Studio Core Backend"
+
+# ----------------------------------------------------------------------------------#
+# PHASE 2: CUSTOM COMPOSE PATCHES (The Final Authority)
+# ----------------------------------------------------------------------------------#
+# This folder contains your specific modifications to the Open-WebUI core files.
+# It maps directly from compose/open-webui/ to apps/open-webui/
+echo "📂 [PHASE 2] Applying Custom Compose Overlays..."
+
+if [ -d "$COMPOSE_WEBUI" ]; then
+    echo "   -> Patching Open-WebUI with files from compose/open-webui/..."
+    cp -rvu "$COMPOSE_WEBUI/"* "$WEBUI_DIR/" 2>/dev/null
 else
-    echo "⚠️  [WARNING] Comfy VENV not found. Skipping Comfy sync."
+    echo "   ⚠️  [WARNING] Compose patches folder missing at $COMPOSE_WEBUI"
 fi
 
-# --- 2. Open WebUI VENV Synchronization ---
-if [ -d "$WEBUI_DIR/backend/venv" ]; then
-    echo "   -> Activating Open WebUI Backend VENV..."
-    source "$WEBUI_DIR/backend/venv/bin/activate"
-    
-    if [ -f "$STUDIO_ROOT/core/requirements.txt" ]; then
-        echo "      🧠 [SYNC] Injecting CORE Module dependencies into Open WebUI..."
-        pip install -r "$STUDIO_ROOT/core/requirements.txt" --no-cache-dir
+# ----------------------------------------------------------------------------------#
+# PHASE 3: DEPENDENCY SYNCHRONIZATION
+# ----------------------------------------------------------------------------------#
+echo "🐍 [PHASE 3] Synchronizing Python Stacks..."
+
+CORE_REQ="$STUDIO_ROOT/core/requirements.txt"
+if [ -f "$CORE_REQ" ]; then
+    # Detect active WebUI VENV
+    W_VENV=""
+    [ -d "$WEBUI_DIR/backend/venv" ] && W_VENV="$WEBUI_DIR/backend/venv"
+    [ -d "$WEBUI_DIR/venv" ] && W_VENV="$WEBUI_DIR/venv"
+
+    if [ -n "$W_VENV" ]; then
+        echo "   -> [SYNC] Installing Studio Core requirements in WebUI VENV..."
+        source "$W_VENV/bin/activate"
+        pip install -r "$CORE_REQ" --no-cache-dir
+        deactivate
     fi
     
-    deactivate
-else
-    echo "⚠️  [WARNING] Open WebUI Backend VENV not found. Skipping WebUI sync."
+    # Sync ComfyUI VENV as well
+    if [ -d "$COMFY_DIR/venv" ]; then
+        echo "   -> [SYNC] Installing Studio Core requirements in ComfyUI VENV..."
+        source "$COMFY_DIR/venv/bin/activate"
+        pip install -r "$CORE_REQ" --no-cache-dir
+        deactivate
+    fi
 fi
 
-echo "✅ [STUDIO SYNC] All specialized stacks, Core modules, and global fixes are synchronized."
+echo -e "✅ [STUDIO SETUP] Multi-layer injection and dependency sync complete.\n"
