@@ -20,19 +20,40 @@ The director refines the automatically generated structure directly within the C
 * **Snap-to-Beat:** Every clip duration is automatically synchronized to end exactly on a musical note or at the conclusion of a lyric phrase.
 * **Continuous Morphing (`Prompt-Relay`):** Within a single clip, the director can set transformation points (Relay Points). The `dynamic_relay_composer` writes interpolation instructions into the OTIO metadata (e.g., Frame 0: "Sad Character", Frame 60: "Smiling Character"), allowing the image to evolve fluidly without hard cuts.
 
-## 4. The Rendering Pipeline (Dual-Phase Production)
+# 🚀 The Visual Production Flow (v4.1) - Updated Rendering Logic
+
+Coozila! Studio follows a professional, high-fidelity pipeline where the transition from a "Sketch" to a "Master" is governed by precision scaling and sequential post-processing.
+
+## 4. The Rendering Pipeline (Multi-Phase Execution)
 
 ### Phase A: Quick Preview (The Sketch)
-* **Target:** Validation of composition, motion, and visual consistency.
-* **Logic:** The `Wan_Batch_Worker` translates OTIO clips into ComfyUI payloads using the **Turbo/Distill LoRA** (8-10 steps).
-* **Result:** A low-res preview is assembled via the `FFmpeg_Stitcher` and displayed in the Canvas for immediate feedback.
+* **Target:** Fast validation of composition, motion, and visual consistency.
+* **Logic:** The `Wan_Batch_Worker` utilizes **Turbo/Distill LoRA** with a low step count ($8 \dots 10$).
+* **Result:** A 16 FPS low-res preview is assembled via `FFmpeg_Stitcher` for immediate feedback.
 
-### Phase B: Master Render (The Final Film)
-* **Target:** High-fidelity 8K cinematic production.
-* **Logic:** Upon approval, LoRA is disabled, and sampling increases to 25-30 steps for maximum Wan 2.2 detail.
-* **Finishing:** * `RIFE_Interpolation_API` boosts the framerate to **64 FPS**.
-    * `Ultimate_Upscale_API` performs tiled **8K** upscaling.
-    * `Memory_Check` prevents hardware resource overflow during final assembly.
+### Phase B: Master Render (High-Fidelity Generation)
+* **Target:** Generation of raw cinematic frames without LoRA artifacts.
+* **Logic:** The LoRA is disabled. Sampling steps are increased to a range of **30 to 40 steps**, depending on the desired detail level and scene complexity.
+* **Duration:** This is the most compute-intensive phase. For a full-length high-complexity video, rendering can take approximately **40+ hours** on a single high-end GPU.
+* **Output:** High-quality raw sequence at 16 FPS.
+
+### Phase C: Sequential Post-Processing (The Finishing Lab)
+The finishing process is strictly sequential to maintain data integrity and prevent VRAM/RAM overflows:
+
+#### 1. Temporal Interpolation (FPS Scaling)
+The project transitions from the cinematic 16 FPS to a fluid high-frame-rate master using `RIFE_Interpolation_API`:
+* **Stage 1:** 16 FPS ➡️ 32 FPS (Initial smoothing).
+* **Stage 2:** 32 FPS ➡️ 64 FPS (Final "Buttery Smooth" motion).
+
+
+
+#### 2. Multi-Phase Tiled Upscaling (Brick-by-Brick)
+Only after the frame rate is locked at 64 FPS does the system initiate the spatial upscale:
+* **Tiled Architecture:** The `Ultimate_Upscale_API` processes the video through a "Brick-by-Brick" method. It deconstructs each frame into tiles (e.g., $64 \times 64$ or $128 \times 128$), upscales them individually, and reassembles them into the 8K master.
+* **Image-by-Image logic:** The process is applied sequentially to every frame in the 64 FPS sequence.
+
+#### 3. Hardware Guardian & Resource Management
+* **Memory_Check:** Monitors the system in real-time. Since 8K tiled assembly at 64 FPS is extremely memory-intensive, the orchestrator manages the tile buffer to ensure the 64GB System RAM limit is never breached.
 
 ## 5. Delivery & Final Mastering
 * **Mastering:** The `Final_Encoder_API` generates the final video file using a high bitrate (200Mbps+) and professional codecs (AV1/H.265).
