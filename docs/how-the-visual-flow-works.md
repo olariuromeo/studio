@@ -1,35 +1,39 @@
-# 🚀 The Visual Production Flow
+# 🚀 The Visual Production Flow (v4.0)
 
-Coozila! Video Studio follows a strict, logical production pipeline that mirrors a real-world film studio, but is accelerated and automated by Generative AI. The entire flow operates on a **Headless API** architecture: the frontend (Open-WebUI) sends mathematical JSON payloads to the backend (ComfyUI), receiving back rendering paths without ever blocking the user interface.
+Coozila! Studio follows a strict, logical production pipeline inspired by top-tier film studio workflows, accelerated by Generative AI. The entire system operates on a **Headless API** architecture, using **OpenTimelineIO (OTIO)** as the core data structure to maintain perfect synchronization between script, audio, and imagery.
 
-## 1. Activation & Pre-Production (The Writer's Room)
-When you open the **Studio Canvas**, the `Orchestrator` initializes a new `STUDIO_SCHEMA`.
-1.  **Context Loading:** Any style ideas, character descriptions, or themes discussed in the Open-WebUI chat are pre-loaded into the schema metadata.
-2.  **Asset Ingestion:** You upload your base track (e.g., "Eternisys.mp3"). The `File_Uploader` safely stores it in the shared `temp_assets/` volume.
+## 1. Activation & OTIO Initialization (The Writer's Room)
+When you open the **Studio Canvas**, the orchestrator initializes a new schema based on the OTIO standard.
+* **Context Loading:** Style ideas, character descriptions, and themes previously discussed with the AI assistant are injected directly into the OTIO schema metadata to ensure creative continuity.
+* **Asset Ingestion:** You upload the master audio track. The `File_Uploader` places it in the shared volume, and the `Audio_Timeline_Builder` creates the base audio track in the OTIO timeline.
 
 ## 2. Audio-Visual Pulse & Casting (The Director's Desk)
-Upon uploading the audio track, the backend initiates a dual-layer analysis:
-1.  **Mathematical Analysis (`librosa` / `pydub`):** Identifies track duration, BPM, onset strength (beats), and massive energy shifts (beat drops, bridges).
-2.  **Semantic Analysis & Diarization (`whisperx`):** Transcribes lyrics with millisecond accuracy and separates distinct voices (e.g., `SPEAKER_00` vs `SPEAKER_01`).
-3.  **The Casting Dialogue:** The AI Assistant presents the analysis in the chat, asking the director to assign physical descriptions to the detected voices (e.g., "SPEAKER_00 is a red-haired woman in a burgundy gown").
-4.  **Canvas Rendering:** The Canvas displays the visual waveform, overlaying the generated Scene Breakdown (Storyboard) exactly where the lyrics and beats dictate.
+Immediately after upload, the backend triggers a multi-layer analysis to populate the timeline:
+* **Mathematical Analysis (`librosa`):** Identifies the BPM and intensity points (onset peaks) to suggest precise cuts synced to the rhythm.
+* **Semantic Analysis & Diarization (`whisperx`):** Transcribes lyrics with exact timestamps and separates detected voices (e.g., SPEAKER_00, SPEAKER_01).
+* **The Casting Dialogue:** The AI presents the analysis in chat: *"I detected a male and a female voice. Who are these actors?"*. 
+    * **Director's Input:** You define the characters (e.g., "SPEAKER_00 is Elara, burgundy gown, red hair"). The assistant maps these descriptions into the corresponding OTIO clip metadata.
+* **Canvas Rendering:** The visual timeline renders the audio waveform and clip blocks mathematically aligned to lyrics and beats.
 
 ## 3. Dynamic Directing & Prompt-Relay
-The director reviews the AI-generated timeline in the Canvas.
-* **Snap-to-Beat:** Each clip's duration is perfectly synchronized to the nearest mathematical beat or lyric cue.
-* **Continuous Morphing (`Prompt-Relay`):** Instead of relying entirely on hard cuts, the director can set "Relay Points" within a single shot. The `dynamic_relay_composer` creates mathematical instructions (e.g., Frame 0: "Woman singing", Frame 60: "Woman transforms into mist"), allowing a continuous shot to evolve exactly on the beat.
-* **Approval:** Once the text-based storyboard and transitions are approved, the batch is queued.
+The director refines the automatically generated structure directly within the Canvas interface:
+* **Snap-to-Beat:** Every clip duration is automatically synchronized to end exactly on a musical note or at the conclusion of a lyric phrase.
+* **Continuous Morphing (`Prompt-Relay`):** Within a single clip, the director can set transformation points (Relay Points). The `dynamic_relay_composer` writes interpolation instructions into the OTIO metadata (e.g., Frame 0: "Sad Character", Frame 60: "Smiling Character"), allowing the image to evolve fluidly without hard cuts.
 
 ## 4. The Rendering Pipeline (Dual-Phase Production)
 
 ### Phase A: Quick Preview (The Sketch)
-* **Target:** Fast validation of motion, Prompt-Relay morphing, and composition.
-* **Logic:** The `Wan_Batch_Worker` sends low-resolution, low-step (8-10 steps) payloads to the ComfyUI API using the **Turbo/Distill LoRA**.
-* **Result:** The `FFmpeg_Stitcher` quickly concatenates these low-res clips over the original audio, displaying a rough-cut preview directly in the Canvas.
+* **Target:** Validation of composition, motion, and visual consistency.
+* **Logic:** The `Wan_Batch_Worker` translates OTIO clips into ComfyUI payloads using the **Turbo/Distill LoRA** (8-10 steps).
+* **Result:** A low-res preview is assembled via the `FFmpeg_Stitcher` and displayed in the Canvas for immediate feedback.
 
 ### Phase B: Master Render (The Final Film)
-* **Target:** High-fidelity, cinematic production.
-* **Logic:** The timeline is locked. LoRA is disabled; sampling steps increase (25-30) for maximum Wan 2.2 detail.
-* **Finishing:** * `RIFE_Interpolation_API` pushes the framerate to buttery-smooth 64 FPS.
-    * `Ultimate_Upscale_API` runs an 8K tiled upscale, closely monitored by the `Memory_Check` module to prevent VRAM overflow.
-* **Result:** `Final_Encoder_API` uses FFmpeg (AV1/H.265 at 200Mbps+) to merge the stunning 8K video with the original audio track, providing a direct download link in the Open-WebUI chat.
+* **Target:** High-fidelity 8K cinematic production.
+* **Logic:** Upon approval, LoRA is disabled, and sampling increases to 25-30 steps for maximum Wan 2.2 detail.
+* **Finishing:** * `RIFE_Interpolation_API` boosts the framerate to **64 FPS**.
+    * `Ultimate_Upscale_API` performs tiled **8K** upscaling.
+    * `Memory_Check` prevents hardware resource overflow during final assembly.
+
+## 5. Delivery & Final Mastering
+* **Mastering:** The `Final_Encoder_API` generates the final video file using a high bitrate (200Mbps+) and professional codecs (AV1/H.265).
+* **Professional Export:** The system provides both the final video and the master `.otio` file for download, allowing the project to be imported directly into DaVinci Resolve or Premiere Pro for further post-production.
