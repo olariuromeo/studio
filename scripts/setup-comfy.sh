@@ -29,42 +29,17 @@ python -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 
-# --------------------------------------------------------
-# 3. Step A: Install Torch (STRICT 12.x SEARCH)
-# --------------------------------------------------------
-# Prepare the target tag from .env (e.g., 12.5 -> cu125)
-TARGET_TAG="cu$(echo $CUDA_VERSION | tr -d '.')"
-FINAL_INDEX=""
+# ----------------------------------------------------------------------------------#
+# 3. Step A: Manual Torch Install (FORCED CUDA 12.4 STABLE)
+# ----------------------------------------------------------------------------------#
+echo "📥 [MANUAL] Forcing PyTorch 2.5.1 with CUDA 12.4 (Stable for RTX 3080)..."
 
-echo "🔍 Searching for the closest compatible PyTorch 12.x index..."
+# Stergem orice instalare anterioara de torch ca sa nu ramana resturi de v13.0
+pip uninstall torch torchvision torchaudio -y || true
 
-# Define allowed versions in descending order. 
-# We strictly avoid falling back to CUDA 11.x to maintain RTX 30-series performance.
-POSSIBLE_VERSIONS=("$TARGET_TAG" "cu126" "cu124" "cu121" "cu120")
-
-for TAG in "${POSSIBLE_VERSIONS[@]}"; do
-    echo "📡 Testing remote index: https://download.pytorch.org/whl/$TAG/"
-    
-    # Perform a fast HTTP HEAD request to verify index existence
-    if curl --output /dev/null --silent --head --fail "https://download.pytorch.org/whl/$TAG/"; then
-        FINAL_INDEX="$TAG"
-        echo "🎯 [MATCH] Found available index: $FINAL_INDEX"
-        break
-    fi
-done
-
-# Critical check: Abort if no 12.x version is found on the PyTorch servers.
-if [ -z "$FINAL_INDEX" ]; then
-    echo "❌ [CRITICAL ERROR] No PyTorch CUDA 12.x index found."
-    echo "Installation aborted to prevent incompatible legacy fallback."
-    exit 1
-fi
-
-echo "📥 Installing Torch Stack from validated index: $FINAL_INDEX..."
-
-# Forced installation without cache to ensure binary alignment with hardware.
-pip install torch torchvision torchaudio \
-    --index-url "https://download.pytorch.org/whl/$FINAL_INDEX" \
+# Instalam varianta verificata de pe site-ul oficial
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
+    --index-url https://download.pytorch.org/whl/cu124 \
     --no-cache-dir
 
 # --------------------------------------------------------
@@ -78,16 +53,6 @@ if [ ! -d "custom_nodes/ComfyUI-Manager" ]; then
     git clone https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager
 fi
 pip install -r custom_nodes/ComfyUI-Manager/requirements.txt
-
-# --------------------------------------------------------
-# 5. Step C: Coozila! Studio Fixes (Final Injection)
-# --------------------------------------------------------
-# This step fixes ModuleNotFoundErrors (cv2, diffusers, pydub, ftfy, etc.)
-# by installing our centralized studio-root requirements.
-if [ -f "$STUDIO_ROOT/requirements.txt" ]; then
-    echo "📥 [COMFY] Injecting Studio-Specific Fixes from Root..."
-    pip install -r "$STUDIO_ROOT/requirements.txt"
-fi
 
 deactivate
 echo "✅ [COMFY] Backend Engine Ready (Locked on Hardware Index: $FINAL_INDEX)."

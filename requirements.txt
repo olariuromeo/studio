@@ -1,29 +1,9 @@
-# --- Coozila! Studio AI Stack Fixes ---
-opencv-python
-matplotlib
-pandas
-diffusers
-transformers
-accelerate
-omegaconf
-einops
-tqdm
-scipy
-numba
-tinytag
-googletrans==3.1.0a0
-moviepy
-imageio-ffmpeg
-ffmpeg-python
-GitPython
-evalidate
-gguf
-openunmix
-termcolor
+# Build Tools (necesare pentru orice compilare ulterioară)
+setuptools
+
+# Pachete lipsă din setup-urile automate
 pydub
 piexif
-ollama
-ftfy
-loralib
-scikit-image
-sageattention
+lion_pytorch
+googletrans
+segment_anything
