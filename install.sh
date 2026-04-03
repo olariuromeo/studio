@@ -102,6 +102,9 @@ chmod +x scripts/*.sh
 # Installs custom APIs, audio processing (Librosa/PyDub), and FFmpeg tools
 ./scripts/setup-studio.sh
 
+# 5. Setup OpenTimelineIO Engine (The Backbone)
+./scripts/setup-otio.sh
+
 # ----------------------------------------------------------------------------------#
 # 5. FINAL GLOBAL SYNC (The Fixer)
 # ----------------------------------------------------------------------------------#
