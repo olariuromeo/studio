@@ -1,9 +1,13 @@
-# --- Coozila Core: Audio Processing ---
+# ============================================================================ #
+# Coozila! Core v4.0 - Open WebUI Backend Requirements
+# ============================================================================ #
+
+# --- Audio Processing ---
 librosa==0.10.1          # Analiză BPM și frecvențe pentru sync
 resampy==0.4.3           # Necesar pentru backend-ul librosa
 soundfile==0.12.1        # Citire fișiere audio (wav, mp3)
 
-# --- Coozila Core: Video & Workflow ---
+# --- Video & Workflow ---
 ffmpeg-python==0.2.0     # Bridge pentru procesare video finală
-aiohttp==3.9.3           # Pentru request-uri ultra-rapide către ComfyUI
+aiohttp>=3.9.3           # Request-uri ultra-rapide către ComfyUI
 pydantic>=2.0.0          # Validare date pentru timeline-ul nostru

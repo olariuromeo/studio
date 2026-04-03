@@ -1,9 +1,0 @@
-# Build Tools (necesare pentru orice compilare ulterioară)
-setuptools
-
-# Pachete lipsă din setup-urile automate
-pydub
-piexif
-lion_pytorch
-googletrans
-segment_anything

@@ -20,11 +20,58 @@ export CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
 asdf plugin add python || true
 asdf plugin add nodejs || true
 
-# 2. Repo Sync & Overwrite
+# ----------------------------------------------------------------------------------#
+# 1.5. SCORCHED EARTH CLEANUP (Nuclear Option)
+# ----------------------------------------------------------------------------------#
+echo "☢️ [GLOBAL] Executing Pre-Install Nuclear Cleanup..."
+deactivate 2>/dev/null || true
+
+echo "   -> Destroying old VENVs to prevent cross-contamination..."
+rm -rf "$COMFY_DIR/venv"
+rm -rf "$WEBUI_DIR/venv"
+
+echo "   -> Wiping global PIP cache (~/.cache/pip) to force clean builds..."
+rm -rf ~/.cache/pip
+rm -rf /tmp/pip-*
+
+echo "   -> Hunting down and destroying all Node.js caches (node_modules)..."
+find "$STUDIO_ROOT" -type d -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
+
+echo "   -> Hunting down and destroying all __pycache__ folders and compiled files..."
+find "$STUDIO_ROOT" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find "$STUDIO_ROOT" -type f -name "*.py[co]" -delete 2>/dev/null || true
+
+echo "✅ [GLOBAL] Environment is completely sterile. Proceeding with sync..."
+
+# ----------------------------------------------------------------------------------#
+# 2. Repo Sync & Strict Tag Enforcement
+# ----------------------------------------------------------------------------------#
 mkdir -p "$APPS_DIR"
-echo "📦 Syncing Stable Tags..."
-[ ! -d "$WEBUI_DIR" ] && git clone --branch $WEBUI_TAG https://github.com/open-webui/open-webui.git "$WEBUI_DIR"
-[ ! -d "$COMFY_DIR" ] && git clone --branch $COMFY_TAG https://github.com/comfyanonymous/ComfyUI.git "$COMFY_DIR"
+echo "📦 Syncing Strict Stable Tags from .env (WebUI: $WEBUI_TAG | Comfy: $COMFY_TAG)..."
+
+# --- Open WebUI Sync ---
+if [ ! -d "$WEBUI_DIR" ]; then
+    echo "   -> Cloning fresh Open WebUI at tag $WEBUI_TAG..."
+    git clone --branch $WEBUI_TAG https://github.com/open-webui/open-webui.git "$WEBUI_DIR"
+else
+    echo "   -> Open WebUI folder exists. Forcing tag checkout: $WEBUI_TAG..."
+    cd "$WEBUI_DIR"
+    git fetch --all --tags
+    git checkout tags/$WEBUI_TAG -f
+    cd "$STUDIO_ROOT"
+fi
+
+# --- ComfyUI Sync ---
+if [ ! -d "$COMFY_DIR" ]; then
+    echo "   -> Cloning fresh ComfyUI at tag $COMFY_TAG..."
+    git clone --branch $COMFY_TAG https://github.com/comfyanonymous/ComfyUI.git "$COMFY_DIR"
+else
+    echo "   -> ComfyUI folder exists. Forcing tag checkout: $COMFY_TAG..."
+    cd "$COMFY_DIR"
+    git fetch --all --tags
+    git checkout tags/$COMFY_TAG -f
+    cd "$STUDIO_ROOT"
+fi
 
 echo "📂 Overwriting Upstream with Coozila! Custom Core..."
 cp -rv "$STUDIO_ROOT/canvas/"* "$WEBUI_DIR/src/"
@@ -43,7 +90,6 @@ chmod +x scripts/*.sh
 # 3. Setup Wan 2.2 High-Performance Layer
 # This injects Flash-Attention, SAM2, and specific Wan transformers 
 # into the same VENV created by ComfyUI
-# 3. Setup Wan 2.2 High-Performance Layer
 ./scripts/setup-wan2.sh
 
 # ----------------------------------------------------------------------------------#
@@ -58,7 +104,7 @@ if [ -d "$COMFY_DIR/venv" ]; then
     if [ -f "$STUDIO_ROOT/requirements.txt" ]; then
         echo "📥 [SYNC] Injecting missing dependencies from root requirements..."
         # Folosim --no-cache-dir pentru a fi siguri că nu luăm versiuni vechi
-        pip install -r "$STUDIO_ROOT/requirements.txt"
+        pip install -r "$STUDIO_ROOT/requirements.txt" --no-cache-dir
     fi
     deactivate
 else
