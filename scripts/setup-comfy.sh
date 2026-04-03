@@ -27,16 +27,16 @@ source venv/bin/activate
 pip install --upgrade pip
 
 # ----------------------------------------------------------------------------------#
-# 3. Step A: Manual Torch Install (FORCED CUDA 12.4 STABLE)
+# 3. Step A: Dynamic Torch Install (Driven by .env)
 # ----------------------------------------------------------------------------------#
-echo "📥 [MANUAL] Forcing PyTorch 2.5.1 with CUDA 12.4 (Stable for RTX 3080)..."
+echo "📥 [MANUAL] Forcing PyTorch 2.5.1 with CUDA $CUDA_VERSION (Target URL tag: $CUDA_TAG)..."
 
-# Stergem orice instalare anterioara de torch ca sa nu ramana resturi
+# Remove any previous torch installations to prevent conflicts and ensure a clean slate
 pip uninstall torch torchvision torchaudio -y || true
 
-# Instalam varianta verificata de pe site-ul oficial
+# Install the verified version directly from the official repository using the dynamic tag
 pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
-    --index-url https://download.pytorch.org/whl/cu124 \
+    --index-url "https://download.pytorch.org/whl/$CUDA_TAG" \
     --no-cache-dir
 
 # ----------------------------------------------------------------------------------#
@@ -45,11 +45,11 @@ pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
 echo "📥 [COMFY] Installing Official Requirements..."
 [ -f "requirements.txt" ] && pip install -r requirements.txt
 
-# INSTALARE MANAGER (Conform documentației oficiale)
+# INSTALL MANAGER (As per official documentation)
 echo "📦 [COMFY] Installing Manager dependencies..."
 if [ -f "manager_requirements.txt" ]; then
     pip install -r manager_requirements.txt
 fi
 
 deactivate
-echo "✅ [COMFY] Environment ready. Torch locked on CU124."
+echo "✅ [COMFY] Environment ready. Torch locked on CU$CUDA_TAG."
