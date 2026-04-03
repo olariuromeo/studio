@@ -98,8 +98,12 @@ chmod +x scripts/*.sh
 # into the same VENV created by ComfyUI
 ./scripts/setup-wan2.sh
 
+# 4. Setup Coozila! Studio Core Dependencies
+# Installs custom APIs, audio processing (Librosa/PyDub), and FFmpeg tools
+./scripts/setup-studio.sh
+
 # ----------------------------------------------------------------------------------#
-# 4. FINAL GLOBAL SYNC (The Fixer)
+# 5. FINAL GLOBAL SYNC (The Fixer)
 # ----------------------------------------------------------------------------------#
 # We run this AFTER all specialized scripts to ensure the shared VENV 
 # matches the Studio's master requirements list.
@@ -120,7 +124,7 @@ fi
 echo "✅ [INSTALLER] All specialized stacks and global fixes have been synchronized."
 
 # ----------------------------------------------------------------------------------#
-# 5. MULTI-PROCESS LAUNCH
+# 6. MULTI-PROCESS LAUNCH
 # ----------------------------------------------------------------------------------#
 echo "🚀 Coozila! Studio v4.0 starting up..."
 
