@@ -1,7 +1,14 @@
 #!/bin/bash
 # ----------------------------------------------------------------------------------#
-# Coozila! Studio v4.0 - Frontend Setup (Clean Build)
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
 # ----------------------------------------------------------------------------------#
+# Document: studio/script/setup-webui.sh
+# Description: Local Environment Configuration for Coozila! Studio v4.0.
+# ----------------------------------------------------------------------------------#
+set -e
 set -e
 
 echo "🌐 [WEBUI] Initializing Frontend Environment (Python $WEBUI_PYTHON_VERSION)..."

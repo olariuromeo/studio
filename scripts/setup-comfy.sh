@@ -1,6 +1,12 @@
 #!/bin/bash
 # ----------------------------------------------------------------------------------#
-# Coozila! Studio v4.0 - Official ComfyUI & Manager Environment
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# Document: studio/scripts/setup-comfy.sh
+# Description: Local Environment Configuration for Coozila! Studio v4.0.
 # ----------------------------------------------------------------------------------#
 set -e
 

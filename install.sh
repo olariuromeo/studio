@@ -1,6 +1,12 @@
 #!/bin/bash
 # ----------------------------------------------------------------------------------#
-# Coozila! Studio v4.0 - Master Orchestrator (Multi-Python Support)
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# Document: studio/install.sh
+# Description: Local Environment Configuration for Coozila! Studio v4.0.
 # ----------------------------------------------------------------------------------#
 set -e
 
@@ -103,7 +109,7 @@ if [ -d "$COMFY_DIR/venv" ]; then
     source "$COMFY_DIR/venv/bin/activate"
     if [ -f "$STUDIO_ROOT/requirements.txt" ]; then
         echo "📥 [SYNC] Injecting missing dependencies from root requirements..."
-        # Folosim --no-cache-dir pentru a fi siguri că nu luăm versiuni vechi
+        # Using --no-cache-dir to ensure we don't install outdated cached versions
         pip install -r "$STUDIO_ROOT/requirements.txt" --no-cache-dir
     fi
     deactivate
@@ -120,24 +126,35 @@ echo "🚀 Coozila! Studio v4.0 starting up..."
 
 # CLEANUP: Kill any existing processes on the target ports
 echo "🧹 Clearing ports $STUDIO_PORT and $ENGINE_PORT..."
-fuser -k ${STUDIO_PORT}/tcp || true
-fuser -k ${ENGINE_PORT}/tcp || true
-pkill -f "open-webui serve" || true
+fuser -k ${STUDIO_PORT}/tcp >/dev/null 2>&1 || true
+fuser -k ${ENGINE_PORT}/tcp >/dev/null 2>&1 || true
+pkill -f "open-webui serve" >/dev/null 2>&1 || true
 
 # Launch Frontend (WebUI)
 echo "🌐 Starting Frontend on port $STUDIO_PORT..."
 cd "$WEBUI_DIR"
 source venv/bin/activate
-# Rulăm în background
 PORT=$STUDIO_PORT open-webui serve > "$STUDIO_ROOT/open-webui.log" 2>&1 &
 deactivate
+
+# Display the Control Panel Dashboard
+echo ""
+echo "=========================================================================="
+echo " 🎉 COOZILA! STUDIO v4.0 IS ONLINE! "
+echo "=========================================================================="
+echo " 🌐 Frontend (Open WebUI) : http://localhost:$STUDIO_PORT"
+echo " 🎬 Backend  (ComfyUI)    : http://localhost:$ENGINE_PORT"
+echo "=========================================================================="
+echo " 📜 WebUI logs are running in the background and saved to: open-webui.log"
+echo " ⏳ ComfyUI logs are streaming below (Press CTRL+C to stop all services)."
+echo "=========================================================================="
+echo ""
 
 # Launch Backend (ComfyUI + Wan 2.2 Layer)
 echo "🎬 Starting Engine on port $ENGINE_PORT..."
 cd "$COMFY_DIR"
 source venv/bin/activate
 
-# Folosim 'exec' pentru ca procesul Python să preia controlul terminalului
 exec python main.py \
     --listen 0.0.0.0 \
     --port $ENGINE_PORT \

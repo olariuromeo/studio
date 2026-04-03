@@ -1,6 +1,12 @@
 #!/bin/bash
 # ----------------------------------------------------------------------------------#
-# Coozila! Studio v4.0 - Global Sync & Core Injection
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# Document: studio/scripts/studio.sh
+# Description: Local Environment Configuration for Coozila! Studio v4.0.
 # ----------------------------------------------------------------------------------#
 set -e
 
