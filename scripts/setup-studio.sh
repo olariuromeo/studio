@@ -5,19 +5,19 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-# Document: studio/scripts/studio.sh
+# Document: scripts/setup-studio.sh
 # Description: Local Environment Configuration for Coozila! Studio v4.0.
 # ----------------------------------------------------------------------------------#
 set -e
 
 echo "🛠️  [STUDIO SYNC] Synchronizing Global Studio & Core Requirements..."
 
-# 0. Ne asigurăm că știm unde suntem (în caz că rulezi scriptul separat)
+# 0. Ensure context is set (in case the script is run standalone)
 STUDIO_ROOT="${STUDIO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 COMFY_DIR="${COMFY_DIR:-$STUDIO_ROOT/apps/ComfyUI}"
 WEBUI_DIR="${WEBUI_DIR:-$STUDIO_ROOT/apps/open-webui}"
 
-# --- 1. Sincronizare VENV ComfyUI ---
+# --- 1. ComfyUI VENV Synchronization ---
 if [ -d "$COMFY_DIR/venv" ]; then
     echo "   -> Activating ComfyUI VENV..."
     source "$COMFY_DIR/venv/bin/activate"
@@ -37,7 +37,7 @@ else
     echo "⚠️  [WARNING] Comfy VENV not found. Skipping Comfy sync."
 fi
 
-# --- 2. Sincronizare VENV Open WebUI ---
+# --- 2. Open WebUI VENV Synchronization ---
 if [ -d "$WEBUI_DIR/backend/venv" ]; then
     echo "   -> Activating Open WebUI Backend VENV..."
     source "$WEBUI_DIR/backend/venv/bin/activate"
