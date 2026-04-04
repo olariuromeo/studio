@@ -5,7 +5,7 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-# Document: studio/install.sh
+# Document: studio/dev.sh
 # Description: Resilient Master Orchestrator for Coozila! Studio v4.1.
 # Logic: Nuclear Cleanup -> App Setup -> Studio/OTIO Injection -> Auto-Launch.
 # ----------------------------------------------------------------------------------#
@@ -65,16 +65,18 @@ asdf plugin add nodejs || true
 # ----------------------------------------------------------------------------------#
 echo -e "${YELLOW}☢️  [GLOBAL] Starting Nuclear Cleanup (Scorched Earth Mode)...${NC}"
 
-# Kill any blocking processes
+# Kill any blocking processes (Frontend, Backend, Engines)
 deactivate 2>/dev/null || true
 fuser -k ${STUDIO_PORT}/tcp >/dev/null 2>&1 || true
 fuser -k ${ENGINE_PORT}/tcp >/dev/null 2>&1 || true
+fuser -k 5173/tcp >/dev/null 2>&1 || true # Omoară Vite dacă a rămas deschis
 pkill -f "open-webui" >/dev/null 2>&1 || true
+pkill -f "node" >/dev/null 2>&1 || true   # Omoară orice proces Node rătăcit
 
 # Purge Environments and Frontend Artifacts
 echo "   -> Wiping VENVs and Node.js artifacts..."
 rm -rf "$COMFY_DIR/venv" "$WEBUI_DIR/venv" "$WEBUI_DIR/backend/venv"
-rm -rf "$WEBUI_DIR/.svelte-kit" "$WEBUI_DIR/node_modules"
+rm -rf "$WEBUI_DIR/.svelte-kit" "$WEBUI_DIR/node_modules" "$WEBUI_DIR/build"
 rm -f "$WEBUI_DIR/package-lock.json"
 
 # Purge Python Caches
@@ -90,74 +92,69 @@ echo -e "${GREEN}✅ Environment is sterile. Starting fresh deployment...${NC}"
 # ----------------------------------------------------------------------------------#
 
 # 1. Setup WebUI Core (Repos & VENV)
-run_step "./scripts/setup-webui.sh" "WebUI Base Layer"
+run_step "./dev/setup-webui.sh" "WebUI Base Layer"
 
 # 2. Inject Studio Overlays (Canvas, Core, Compose Patches)
-run_step "./scripts/setup-studio.sh" "Studio Integration"
+run_step "./dev/setup-studio.sh" "Studio Integration"
 
 # 3. Install OTIO Engine (Timeline Backbone)
-run_step "./scripts/setup-otio.sh" "OTIO Engine"
+#run_step "./dev/setup-otio.sh" "OTIO Engine"
 
 # 4. Setup ComfyUI Independent Engine
-run_step "./scripts/setup-comfy.sh" "Backend Engine (ComfyUI)"
+#run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"
 
 # 5. Setup Wan 2.2 Acceleration Layer
-run_step "./scripts/setup-wan2.sh" "Wan 2.2 Acceleration"
+#run_step "./dev/setup-wan2.sh" "Wan 2.2 Acceleration"
 
 # ----------------------------------------------------------------------------------#
-# PHASE 2: THE FINAL SEAL (BUILD)
+# PHASE 2: FRONTEND ENGINE (Vite / SvelteKit)
 # ----------------------------------------------------------------------------------#
-# Now that EVERY component is in place, we compile the WebUI.
-echo -e "\n${BLUE}🏗️  [BUILD] Executing Final WebUI Production Build...${NC}"
-if [ -d "$WEBUI_DIR/venv" ]; then
+echo -e "\n${CYAN}# ------------------------------------------------------------------------- #${NC}"
+echo -e "${CYAN}#  ENGINE: FRONTEND (Vite Server)                                           #${NC}"
+echo -e "${CYAN}#  LOGS  : Real-time Output                                                 #${NC}"
+echo -e "${CYAN}# ------------------------------------------------------------------------- #${NC}"
+
+if [ -d "$WEBUI_DIR" ]; then
     cd "$WEBUI_DIR"
-    source venv/bin/activate
-    # Hatch build: Compiles Svelte with all injected overlays.
-    pip install -e . --no-cache-dir
+    
+    # 1. Install - Ensure all node_modules (like pyodide) are present
+    echo -e "${YELLOW}📦 [1/3] Installing Frontend Dependencies...${NC}"
+    npm install
+    
+    # 2. Build - Catch errors early and prepare the build folder
+    echo -e "${YELLOW}🏗️  [2/3] Compiling Production Build (Safety Check)...${NC}"
+    npm run build
+    
     if [ $? -ne 0 ]; then
-        echo -e "${RED}❌ FINAL BUILD FAILED!${NC}"
-        FAILED_MODULES+=("WebUI Production Build")
+        echo -e "${RED}❌ BUILD FAILED! Fix Svelte/Vite errors before continuing.${NC}"
+        exit 1
     fi
-    deactivate
+
+    # 3. Dev - Start the HMR (Hot Module Replacement) server
+    echo -e "${GREEN}🚀 [3/3] Starting Dev Server at http://localhost:5173...${NC}"
+    
+    # We run 'npm run dev' and keep it in the foreground of THIS terminal
+    # This way you see the Vite logs immediately.
+    npm run dev &
+    FRONT_PID=$!
+    
     cd "$STUDIO_ROOT"
 fi
 
 # ----------------------------------------------------------------------------------#
-# PHASE 4: REPORT & LAUNCH
+# PHASE 3: HANDOFF (Backend Instructions)
 # ----------------------------------------------------------------------------------#
-echo -e "\n${BLUE}==========================================================================${NC}"
-if [ ${#FAILED_MODULES[@]} -eq 0 ]; then
-    echo -e "${GREEN}✨ COOZILA! STUDIO v4.1: INSTALLATION SUCCESSFUL!${NC}"
-    echo -e "${BLUE}--------------------------------------------------------------------------${NC}"
-    echo -e " 🌐 Frontend (WebUI) : ${GREEN}http://localhost:$STUDIO_PORT${NC}"
-    echo -e " 🎬 Backend (ComfyUI): ${GREEN}http://localhost:$ENGINE_PORT${NC}"
-    echo -e "${BLUE}--------------------------------------------------------------------------${NC}"
-else
-    echo -e "${RED}⚠️  INSTALLATION WARNING: Some modules failed:${NC}"
-    for module in "${FAILED_MODULES[@]}"; do echo -e "  - ${RED}$module${NC}"; done
-fi
-echo -e "${BLUE}==========================================================================${NC}\n"
+echo -e "\n${YELLOW}==========================================================================${NC}"
+echo -e "${GREEN}✨ FRONTEND IS READY & WAITING FOR BACKEND${NC}"
+echo -e "${YELLOW}==========================================================================${NC}"
+echo -e "\n${WHITE}Now, open a ${GREEN}NEW TERMINAL${WHITE} and fire up the Engine:${NC}"
+echo -e "${BLUE}──────────────────────────────────────────────────────────────────────────${NC}"
+echo -e "${CYAN}  cd ${WEBUI_DIR}/backend${NC}"
+echo -e "${CYAN}  source ../venv/bin/activate${NC}"
+echo -e "${CYAN}  pip install -r requirements.txt -U${NC}"
+echo -e "${CYAN}  sh dev.sh${NC}"
+echo -e "${BLUE}──────────────────────────────────────────────────────────────────────────${NC}"
 
-# Launch logic
-if [ -d "$WEBUI_DIR/venv" ] && [ -d "$COMFY_DIR/venv" ]; then
-    echo -e "${BLUE}🚀 Starting services now...${NC}"
-    
-    # 1. Start WebUI (Background)
-    cd "$WEBUI_DIR"
-    source venv/bin/activate
-    PORT=$STUDIO_PORT open-webui serve > "$STUDIO_ROOT/open-webui.log" 2>&1 &
-    deactivate
-
-    # 2. Start ComfyUI (Foreground) - Acesta este "Congu"
-    cd "$COMFY_DIR"
-    source venv/bin/activate
-    
-    # Folosim variabila $ENGINE_PORT din .env
-    exec python main.py \
-        --listen 0.0.0.0 \
-        --port $ENGINE_PORT \
-        --enable-manager \
-        --$VRAM_MODE \
-        --async-offload \
-        --preview-method auto
-fi
+# Wait for the user to kill the process
+trap "kill $FRONT_PID 2>/dev/null; echo -e '\n🛑 Stopping Frontend...'; exit" SIGINT SIGTERM
+wait $FRONT_PID

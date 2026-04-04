@@ -27,13 +27,21 @@ fi
 if [ -f "$VENV_PATH/bin/activate" ]; then
     source "$VENV_PATH/bin/activate"
     cd "$WRAPPER_DIR"
+    
+    echo "📥 [PIP] Upgrading build tools..."
+    pip install --upgrade pip setuptools wheel --no-cache-dir
+
     echo "📥 [PIP] Installing Requirements..."
-    pip install -r requirements.txt --no-cache-dir
-    pip install onnx matrix-nio --no-cache-dir
+    [ -f "requirements.txt" ] && pip install -r requirements.txt --no-cache-dir
+    
+    echo "📥 [PIP] Injecting Specialized AI Acceleration..."
+
+    pip install onnx onnxruntime-gpu sageattention matrix-nio --no-cache-dir
+    
     deactivate
 else
-    echo "❌ [ERROR] VENV not found. Run setup-comfy.sh first."
+    echo "❌ [ERROR] VENV not found at $VENV_PATH. Run setup-comfy.sh first."
     exit 1
 fi
 
-echo "✅ [SUCCESS] Wan 2.2 Wrapper is ready."
+echo "✅ [SUCCESS] Wan 2.2 Wrapper is fully provisioned with Face Restoration support."
