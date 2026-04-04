@@ -98,7 +98,7 @@ run_step "./dev/setup-webui.sh" "WebUI Base Layer"
 run_step "./dev/setup-studio.sh" "Studio Integration"
 
 # 3. Install OTIO Engine (Timeline Backbone)
-#run_step "./dev/setup-otio.sh" "OTIO Engine"
+run_step "./dev/setup-otio.sh" "OTIO Engine"
 
 # 4. Setup ComfyUI Independent Engine
 #run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"

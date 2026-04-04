@@ -5,61 +5,62 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-# Document: scripts/setup-otio.sh
+# Document: studio/dev/setup-otio.sh
 # Description: Clean Native Provisioning of OTIO Suite into Studio.
 # ----------------------------------------------------------------------------------#
 set -e
 
 # 1. Environment Context
-STUDIO_ROOT="${STUDIO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if [ -f "$STUDIO_ROOT/.env" ]; then
-    export $(grep -v '^#' "$STUDIO_ROOT/.env" | xargs)
-else
-    echo "❌ [ERROR] .env file missing at $STUDIO_ROOT."
-    exit 1
+# Load variables from .env.dev
+if [ -f "$STUDIO_ROOT/.env.dev" ]; then
+    export $(grep -v '^#' "$STUDIO_ROOT/.env.dev" | xargs)
 fi
 
-# 2. Definirea căilor NATIVE direct în STUDIO
-# Le clonăm cu numele lor oficiale ca să nu stricăm importurile Python
-OTIO_DIR="$STUDIO_ROOT/studio/OpenTimelineIO"
+# Definirea directoarelor (SIMPLIFIED LOWERCASE)
+OTIO_DIR="$STUDIO_ROOT/studio/otio"
 VIEWER_DIR="$STUDIO_ROOT/studio/otioview"
-
-echo "🎞️  [OTIO] Injecting OpenTimelineIO & otioview into Studio..."
-
-# 3. Clonăm OpenTimelineIO (Motorul de calcul)
-if [ ! -d "$OTIO_DIR" ]; then
-    echo "   -> Cloning OpenTimelineIO into studio/..."
-    git clone "https://github.com/AcademySoftwareFoundation/OpenTimelineIO.git" "$OTIO_DIR"
-    # Sincronizăm versiunea stabilă definită în .env
-    cd "$OTIO_DIR" && git checkout "$OTIO_TAG" && cd "$STUDIO_ROOT"
-fi
-
-# 4. Clonăm otioview (Interfața grafică)
-if [ ! -d "$VIEWER_DIR" ]; then
-    echo "   -> Cloning otioview into studio/..."
-    git clone "https://github.com/OpenTimelineIO/otioview.git" "$VIEWER_DIR"
-fi
-
-# 5. Instalarea "Editable" în VENV-ul de Open-WebUI
-# Asta face ca Python să folosească fișierele din Studio, nu să le îngroape în venv
 WEBUI_VENV="$STUDIO_ROOT/apps/open-webui/venv"
 
-if [ -d "$WEBUI_VENV" ]; then
-    echo "   -> Linking Studio OTIO modules to Python environment..."
-    source "$WEBUI_VENV/bin/activate"
-    
-    # -e (editable) înseamnă că orice modifici în studio/ se vede instant în aplicație
-    echo "   -> Installing OpenTimelineIO (editable mode)..."
-    cd "$OTIO_DIR" && pip install -e . --no-cache-dir
-    
-    echo "   -> Installing otioview (editable mode)..."
-    cd "$VIEWER_DIR" && pip install -e . --no-cache-dir
-    
-    deactivate
-    cd "$STUDIO_ROOT"
+echo "🎞️  [OTIO] Injecting Custom OTIO Suite (lowercase paths)..."
+
+# 2. Sync OTIO Engine (Lowercase Folder)
+if [ ! -d "$OTIO_DIR" ]; then
+    echo "   -> Cloning OTIO into studio/otio..."
+    git clone --branch "$OTIO_BRANCH" "$OTIO_CUSTOM_REPO" "$OTIO_DIR"
 else
-    echo "⚠️  [WARNING] WebUI VENV not found at $WEBUI_VENV. Skip linking."
+    echo "   -> Updating studio/otio..."
+    cd "$OTIO_DIR" && git pull origin "$OTIO_BRANCH" && cd "$STUDIO_ROOT"
 fi
 
-echo "✅ [SUCCESS] OTIO Suite is now part of Coozila! Studio."
+# 3. Sync otioview UI
+if [ ! -d "$VIEWER_DIR" ]; then
+    echo "   -> Cloning otioview into studio/otioview..."
+    git clone "$VIEWER_CUSTOM_REPO" "$VIEWER_DIR"
+else
+    echo "   -> Updating studio/otioview..."
+    cd "$VIEWER_DIR" && git pull origin main && cd "$STUDIO_ROOT"
+fi
+
+# 4. Hybrid Installation (Editable Mode)
+if [ -d "$WEBUI_VENV" ]; then
+    echo "⚙️  Linking OTIO to Studio VENV in Editable Mode..."
+    source "$WEBUI_VENV/bin/activate"
+    
+    # Instalăm dependențele necesare
+    pip install PySide6 --no-cache-dir
+    
+    # Instalare în mod EDITABLE
+    echo "   -> Installing Engine [studio/otio]..."
+    cd "$OTIO_DIR" && pip install -e .
+    
+    echo "   -> Installing Viewer [studio/otioview]..."
+    cd "$VIEWER_DIR" && pip install -e .
+    
+    deactivate
+    echo "✅ [SUCCESS] OTIO Suite is ready at studio/otio."
+else
+    echo "❌ [ERROR] WebUI VENV not found. Setup WebUI first!"
+    exit 1
+fi
