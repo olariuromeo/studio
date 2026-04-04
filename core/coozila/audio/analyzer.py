@@ -4,63 +4,68 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-
-# Location: studio/audio_sync.py
-# Description: Audio Analysis Engine. Detects BPM, onset strength, and rhythmic 
-#              patterns to calculate beat-perfect transition points for the 
-#              Studio Timeline.
+# Location: coozila/audio/analyzer.py
+# Description: Audio Analysis Engine using Librosa to detect BPM and rhythmic beats.
 
 import librosa
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AudioSyncEngine:
     """
-    Analizează ritmul muzicii pentru a genera puncte de montaj (sync points).
+    Analyzes music rhythm to generate synchronization points (cuts) for the timeline.
     """
     
     @staticmethod
-    def analyze_track(audio_path):
+    def analyze_track(audio_path: str):
         """
-        Detectează BPM-ul și secundele exacte ale beat-urilor.
+        Detects BPM and exact timestamps for musical beats.
         """
         try:
-            # Încărcăm audio (librosa este standardul industrial pentru asta)
+            # Load audio file (Librosa is the industry standard)
             y, sr = librosa.load(audio_path)
             
-            # 1. Detectăm tempo-ul (BPM)
+            # 1. Detect tempo (BPM) and beat frames
             tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
             
-            # 2. Convertim cadrele de beat în secunde
+            # 2. Convert beat frames to seconds
             beat_times = librosa.frames_to_time(beat_frames, sr=sr)
             
-            # 3. Calculăm durata totală
+            # 3. Calculate total duration
             total_duration = librosa.get_duration(y=y, sr=sr)
             
+            # Extract tempo value (handle array if needed)
+            bpm_val = tempo[0] if isinstance(tempo, np.ndarray) else tempo
+
             return {
-                "bpm": round(float(tempo), 2),
+                "bpm": round(float(bpm_val), 2),
                 "beat_timestamps": beat_times.tolist(),
                 "total_duration": round(total_duration, 2)
             }
         except Exception as e:
-            print(f"-> Audio Analysis Error: {e}")
+            logger.error(f"❌ [AUDIO ANALYZER] Analysis Error: {e}")
+            # Safe Fallback
             return {"bpm": 120, "beat_timestamps": [], "total_duration": 30.0}
 
     @staticmethod
-    def get_cut_points(analysis, num_shots):
+    def get_cut_points(analysis: dict, num_shots: int):
         """
-        Alege cele mai bune momente pentru 'cut' dintr-o listă de beat-uri, 
-        astfel încât să avem numărul de shot-uri cerut de Regie.
+        Selects the best 'cut' moments from the beat list to match the required number of shots.
         """
         beats = analysis["beat_timestamps"]
-        if not beats:
-            # Fallback dacă nu detectăm beat-uri: împărțire egală
-            return [i * (analysis["total_duration"] / num_shots) for i in range(1, num_shots + 1)]
+        duration = analysis["total_duration"]
 
-        # Împărțim beat-urile în segmente aproximativ egale pentru numărul de cadre
+        if not beats:
+            # Fallback: Equal division if no beats are detected
+            return [i * (duration / num_shots) for i in range(1, num_shots + 1)]
+
+        # Linearly space indices to pick beats based on required shot count
         idx = np.round(np.linspace(0, len(beats) - 1, num_shots + 1)).astype(int)
         cut_points = [beats[i] for i in idx[1:]]
         
-        # Ne asigurăm că ultimul punct este fix sfârșitul melodiei
-        cut_points[-1] = analysis["total_duration"]
+        # Ensure the last point matches the exact end of the audio
+        cut_points[-1] = duration
         
         return cut_points
