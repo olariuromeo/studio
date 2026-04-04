@@ -4,10 +4,9 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-
-# Location: coozila/video/studio/styles.py
-# Description: Global Style Library. Contains the standardized dictionaries for 
-#              visual presets used by the Assistant to guide Wan 2.2.
+# Location: coozila/video/styles.py
+# Description: Global Style Library. Contains standardized visual presets 
+#              used by the AI Assistant to guide Wan 2.2 generation.
 
 STYLE_PRESETS = {
     "nolan_inspired": {
@@ -56,3 +55,10 @@ STYLE_PRESETS = {
         "negative_tags": "realistic, bright, high-key, anime, flat, high saturation"
     }
 }
+
+def get_style(style_id: str) -> dict:
+    """
+    Retrieves a specific style preset by its ID. 
+    Defaults to 'nolan_inspired' if the ID is not found.
+    """
+    return STYLE_PRESETS.get(style_id, STYLE_PRESETS["nolan_inspired"])

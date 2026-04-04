@@ -11,7 +11,7 @@
 
 import json
 import copy
-from .styles import STYLE_PRESETS
+from ..video.styles import STYLE_PRESETS
 
 def create_new_project(user_id, project_name):
     """Încarcă scheletul și îi dă o identitate."""
