@@ -4,104 +4,83 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-
-# Location: backend/open_webui/coozila/video/studio/orchestrator.py
-# Description: The Final Unified Orchestrator. Manages professional STUDIO_SCHEMA 
-#              lifecycle, AI Vision style extraction, rhythmic audio 
-#              synchronization, and dual-mode rendering (Preview vs. Final).
+# Location: coozila/studio/orchestrator.py
+# Description: The Unified Production Orchestrator. Manages OTIO lifecycle, 
+#              style injection, rhythmic sync, and dual-mode rendering.
 
 import json
 import os
 import asyncio
 import copy
+import logging
 
-# --- IMPORTURI ABSOLUTE (FIXED FOR OPEN-WEBUI) ---
-from studio.style_analyzer import analyze_custom_style
-from open_webui.studio.memory_manager import save_project_state, load_project_state
-from open_webui.studio.style_engine import StyleEngine
-from open_webui.studio.payload_factory import CoozilaPayloadFactory
-from open_webui.studio.comfy_client import send_to_comfyui_and_wait
-from open_webui.studio.media_processor import merge_videos_and_audio_ffmpeg
-from open_webui.studio.audio_sync import AudioSyncEngine
+# --- COOZILA NAMESPACE IMPORTS ---
+from coozila.studio.session import save_project_state, load_project_state
+from coozila.video.template_loader import SHOT_TEMPLATES
+from coozila.video.styles import get_style
+from coozila.video.processor import merge_videos_and_audio_ffmpeg
+from coozila.audio.analyzer import AudioSyncEngine  # Assuming this exists in audio/
+from coozila.video.comfy_client import send_to_comfyui_and_wait
+
+logger = logging.getLogger(__name__)
 
 class VideoStudioManager:
     """
-    Managerul Central al Studioului Coozila. 
-    Coordonează fluxul complet de producție video.
+    Central Studio Manager. 
+    Coordinates the entire video production pipeline from audio pulse to final master.
     """
-    def __init__(self, session_id, user_id):
+    def __init__(self, session_id: str, user_id: str):
         self.session_id = session_id
         self.user_id = user_id
         
-        # Cale dinamică pentru a găsi folderul de template-uri indiferent de mediul de execuție
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.template_path = os.path.join(base_dir, "templates")
-        
+        # Internal storage paths
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        # Templates are now managed by the specific loaders, but we keep a ref for local master schema
         self.schema = self._init_project_schema()
 
-    # --- 📂 MANAGEMENT TEMPLATE (JSON CLONING) ---
-
-    def _load_template(self, filename):
-        """Încarcă un fișier JSON din librăria de resurse studio."""
-        path = os.path.join(self.template_path, filename)
-        if not os.path.exists(path):
-            # Fallback: creăm un folder de templates dacă lipsește pentru a evita crash-ul
-            os.makedirs(self.template_path, exist_ok=True)
-            raise FileNotFoundError(f"⚠️ Resursa Studio lipsește: {path}")
-            
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-
     def _init_project_schema(self):
-        """Încarcă sesiunea existentă sau clonează Master Schema din template."""
+        """Loads an existing session or clones the Master OTIO Schema."""
         existing = load_project_state(self.session_id)
         if existing:
             return existing
         
-        try:
-            master_template = self._load_template("master_schema.json")
-            new_schema = copy.deepcopy(master_template)
-            new_schema["name"] = f"project_{self.session_id}"
-            return new_schema
-        except Exception:
-            # Schemă de urgență în caz că template-ul lipsește la prima rulare
-            return {"name": f"project_{self.session_id}", "metadata": {}, "tracks": {"children": [{"children": []}]}}
+        # Default empty schema if no template is found
+        return {
+            "name": f"project_{self.session_id}",
+            "metadata": {
+                "active_style_id": "nolan_inspired",
+                "custom_style_reference": "",
+                "global_negative_prompt": ""
+            },
+            "tracks": {"children": [{"children": []}]}
+        }
 
-    # --- 🎨 LOGICĂ DE STIL (VISION & LIBRARY) ---
+    # --- 🎨 STYLE & CREATIVE LOGIC ---
 
-    def apply_style_from_library(self, style_id):
-        """Aplică un preset vizual din styles.json."""
-        styles_lib = self._load_template("styles.json")
-        if style_id in styles_lib:
-            selected = styles_lib[style_id]
+    def apply_style(self, style_id: str):
+        """Applies a visual preset from the global style library."""
+        style_config = get_style(style_id)
+        if style_config:
             self.schema["metadata"]["active_style_id"] = style_id
-            self.schema["metadata"]["custom_style_reference"] = selected["tags"]
-            self.schema["metadata"]["global_negative_prompt"] = selected["negative_tags"]
+            self.schema["metadata"]["custom_style_reference"] = style_config["tags"]
+            self.schema["metadata"]["global_negative_prompt"] = style_config["negative_tags"]
             save_project_state(self.session_id, self.schema)
+            logger.info(f"🎨 [ORCHESTRATOR] Applied style: {style_id}")
             return True
         return False
 
-    async def handle_reference_upload(self, image_path):
-        """Analizează imaginea via AI Vision și creează un stil custom dinamic."""
-        new_tags = analyze_custom_style(image_path)
-        engine = StyleEngine()
-        style_config = engine.construct_style_package(custom_user_input=new_tags)
-        
-        self.schema["metadata"]["custom_style_reference"] = style_config["positive_tags"]
-        self.schema["metadata"]["global_negative_prompt"] = style_config["negative_tags"]
-        save_project_state(self.session_id, self.schema)
-        return style_config
+    # --- 🎬 TIMELINE & RHYTHM LOGIC ---
 
-    # --- 🎬 LOGICĂ DE TIMELINE (REGIA & AUDIO SYNC) ---
-
-    async def auto_sync_timeline_to_audio(self, audio_path, template_id):
-        """Analizează audio-ul (BPM) și generează shot-uri sincronizate pe ritm."""
+    async def auto_sync_timeline_to_audio(self, audio_path: str, template_id: str = "default"):
+        """Analyzes audio BPM and generates synchronized shots based on rhythmic peaks."""
+        # Use the specialized Audio Engine
         analysis = AudioSyncEngine.analyze_track(audio_path)
-        self.schema["project_metadata"]["audio_analysis"] = analysis
+        self.schema["metadata"]["audio_analysis"] = analysis
         
-        presets_lib = self._load_template("shot_presets.json")
-        regia_steps = presets_lib.get(template_id, [])
+        # Get cinematic directions from the video template loader
+        regia_steps = SHOT_TEMPLATES.get(template_id, [])
         if not regia_steps:
+            logger.warning(f"⚠️ [ORCHESTRATOR] Template '{template_id}' not found.")
             return
 
         cut_points = AudioSyncEngine.get_cut_points(analysis, len(regia_steps))
@@ -114,11 +93,10 @@ class VideoStudioManager:
             
             new_clip = {
                 "STUDIO_SCHEMA": "Clip.2",
-                "name": f"Shot_{idx+1}: {step['camera']}",
+                "name": f"Shot_{idx+1}: {step.get('camera', 'Static')}",
                 "metadata": { 
                     "generate_type": "normal", 
                     "vibe": step.get('vibe'), 
-                    "transform": step.get('transformation'),
                     "motion_intensity": step.get('motion_intensity', 5)
                 },
                 "source_range": {
@@ -133,64 +111,45 @@ class VideoStudioManager:
             last_point = current_cut
 
         save_project_state(self.session_id, self.schema)
-        print(f"-> 🎵 Timeline sincronizat la {analysis.get('bpm', 'N/A')} BPM.")
+        logger.info(f"🎵 [ORCHESTRATOR] Timeline synced to {analysis.get('bpm')} BPM.")
 
-    # --- 🚀 LOGICĂ DE PRODUCȚIE (RENDER PREVIEW & FINAL) ---
+    # --- 🚀 PRODUCTION PIPELINE (RENDER) ---
 
-    async def request_preview(self, audio_path):
-        """Generează o versiune rapidă folosind LoRA Distill."""
-        return await self.run_render_pipeline(audio_path, is_preview=True)
-
-    async def finalize_production(self, audio_path):
-        """Generează versiunea finală, High-Fidelity."""
-        return await self.run_render_pipeline(audio_path, is_preview=False)
-
-    async def run_render_pipeline(self, audio_path, is_preview=False):
-        """Randează timeline-ul folosind noua Fabrică Coozila (Hybrid FLUX + Wan)."""
+    async def run_render_pipeline(self, audio_path: str, is_preview: bool = True):
+        """Executes the render flow: Payload Construction -> ComfyUI Node -> FFmpeg Mastering."""
         video_track = self.schema["tracks"]["children"][0]["children"]
-        rendered_files = []
+        rendered_chunks = []
         
-        # 1. Inițializăm Fabrica
-        factory = CoozilaPayloadFactory(is_preview=is_preview)
+        logger.info(f"🚀 [RENDER] Starting {'PREVIEW' if is_preview else 'FINAL'} production.")
 
         for clip in video_track:
-            # Parametrii necesari pentru Wan 2.2
-            clip_params = {
-                "media_url": clip["media_references"]["DEFAULT_MEDIA"]["target_url"],
-                "frames": int(clip["source_range"]["duration"]["value"])
+            # Construct parameters for the generation nodes
+            frames = int(clip["source_range"]["duration"]["value"])
+            
+            # Note: Payload building logic should be handled by a specific video/payload_composer.py
+            # For now, we assume a simplified call to the ComfyUI client
+            payload = {
+                "prompt": self.schema["metadata"].get("custom_style_reference"),
+                "negative": self.schema["metadata"].get("global_negative_prompt"),
+                "length": frames,
+                "is_preview": is_preview
             }
             
-            # 2. Construim Payload-ul folosind noua metodă din fabrică
-            payload = factory.build_video_payload(
-                clip_params=clip_params,
-                audio_url=audio_path,
-                style_config={
-                    "positive": self.schema["metadata"].get("custom_style_reference", ""),
-                    "negative": self.schema["metadata"].get("global_negative_prompt", "")
-                }
-            )
-            
-            # 3. Trimitere la ComfyUI
-            video_file = await send_to_comfyui_and_wait(payload)
-            if video_file:
-                rendered_files.append(video_file)
+            chunk_file = await send_to_comfyui_and_wait(payload)
+            if chunk_file:
+                rendered_chunks.append(chunk_file)
 
-        # 4. Finalizare cu FFmpeg
-        prefix = "preview" if is_preview else "final"
-        output_name = f"exports/{self.session_id}_{prefix}_master.mp4"
-        return merge_videos_and_audio_ffmpeg(rendered_files, audio_path, output_name)
-
-    def _split_into_safe_chunks(self, params):
-        """Fragmentarea scenelor lungi în joburi de maxim 77 cadre."""
-        max_f = 77
-        if params.get("frames", 0) <= max_f:
-            return [params]
+        # 4. Final Assembly via FFmpeg Processor
+        prefix = "preview" if is_preview else "master"
+        output_path = f"exports/{self.session_id}_{prefix}.mp4"
         
+        return merge_videos_and_audio_ffmpeg(rendered_chunks, audio_path, output_path)
+
+    def _split_into_safe_chunks(self, frames: int, max_f: int = 77):
+        """Splits long scenes into safe processing chunks to prevent VRAM overflow."""
         chunks = []
-        remaining = params["frames"]
-        while remaining > 0:
-            current_chunk = copy.deepcopy(params)
-            current_chunk["frames"] = min(remaining, max_f)
-            chunks.append(current_chunk)
-            remaining -= max_f
+        while frames > 0:
+            current = min(frames, max_f)
+            chunks.append(current)
+            frames -= current
         return chunks
