@@ -1,0 +1,20 @@
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# File: coozila/audio/requirements.txt
+# Role: Audio Analysis Node (BPM, Beats, Onset Detection)
+# ----------------------------------------------------------------------------------#
+
+# --- 🛰️ MICROSERVICE COMMUNICATION ---
+fastapi>=0.110.0         # API Framework for receiving analysis requests
+uvicorn>=0.27.0           # ASGI server to run the Audio Node
+pydantic>=2.6.0           # Request/Response validation
+
+# --- 🎵 CORE AUDIO ENGINE ---
+librosa==0.10.1           # Primary rhythmic and musical analysis
+numpy>=1.26.0             # Array operations for signal processing
+soundfile>=0.12.1         # Audio file I/O (WAV/MP3 support)
+resampy>=0.4.3            # Audio resampling backend for Librosa

@@ -6,7 +6,8 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: scripts/setup-studio.sh
-# Description: Root-Level Namespace Orchestrator (Coozila Ecosystem).
+# Description: Distributed Namespace Orchestrator. Synchronizes multiple 
+#              microservices (Audio, Studio, Video) and their dependencies.
 # ----------------------------------------------------------------------------------#
 set -e
 
@@ -15,15 +16,14 @@ STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEBUI_DIR="$STUDIO_ROOT/apps/open-webui"
 CORE_SRC="$STUDIO_ROOT/core"
 
-echo -e "\n🛰️  [COOZILA DEPLOY] Synchronizing Root Namespace Ecosystem..."
+echo -e "\n🛰️  [COOZILA DEPLOY] Synchronizing Distributed Root Namespace..."
 
 # ----------------------------------------------------------------------------------#
 # PHASE 1: ATOMIC MIRROR DEPLOYMENT
 # ----------------------------------------------------------------------------------#
-# Acest pas copiază folderul 'coozila' direct în root și 'static/canvas' în locul lui
+# Mirroring the 'coozila' namespace into the Open-WebUI environment.
 if [ -d "$CORE_SRC" ]; then
-    echo "   -> [MIRROR] Overwriting apps/open-webui with core/ assets..."
-    # -r: recursiv, -v: verbose, -u: update (nu rescrie dacă fișierul e identic/mai nou)
+    echo "   -> [MIRROR] Injecting Coozila Core into apps/open-webui..."
     cp -rvu "$CORE_SRC/"* "$WEBUI_DIR/"
 else
     echo "   ⚠️  [ERROR] Source folder 'core/' missing! Deployment aborted."
@@ -31,38 +31,53 @@ else
 fi
 
 # ----------------------------------------------------------------------------------#
-# PHASE 2: CUSTOM COMPOSE PATCHES (The Final Authority)
+# PHASE 2: CUSTOM COMPOSE PATCHES
 # ----------------------------------------------------------------------------------#
-# Aici rămân patch-urile tale specifice (ex: modificările în main.py)
+# Applying specific overlays (e.g., modified main.py or custom configs).
 COMPOSE_WEBUI="$STUDIO_ROOT/compose/open-webui"
 if [ -d "$COMPOSE_WEBUI" ]; then
-    echo "📂 [PHASE 2] Applying Custom Compose Overlays (Patches)..."
+    echo "📂 [PHASE 2] Applying Custom Compose Overlays..."
     cp -rvu "$COMPOSE_WEBUI/"* "$WEBUI_DIR/"
 fi
 
 # ----------------------------------------------------------------------------------#
-# PHASE 3: DEPENDENCY SYNCHRONIZATION
+# PHASE 3: DISTRIBUTED DEPENDENCY SYNCHRONIZATION
 # ----------------------------------------------------------------------------------#
-echo "🐍 [PHASE 3] Synchronizing Python Stacks..."
+echo "🐍 [PHASE 3] Synchronizing Python Micro-Stacks..."
 
-# Noua locație modulară a cerințelor
-CORE_REQ="$CORE_SRC/coozila/studio/requirements.txt"
+# Locate the Virtual Environment (VENV)
+W_VENV=""
+[ -d "$WEBUI_DIR/backend/venv" ] && W_VENV="$WEBUI_DIR/backend/venv"
+[ -d "$WEBUI_DIR/venv" ] && W_VENV="$WEBUI_DIR/venv"
 
-if [ -f "$CORE_REQ" ]; then
-    # Detectăm VENV-ul activ din Open-WebUI
-    W_VENV=""
-    [ -d "$WEBUI_DIR/backend/venv" ] && W_VENV="$WEBUI_DIR/backend/venv"
-    [ -d "$WEBUI_DIR/venv" ] && W_VENV="$WEBUI_DIR/venv"
+if [ -n "$W_VENV" ]; then
+    source "$W_VENV/bin/activate"
+    echo "   -> [VENV] Active: $W_VENV"
 
-    if [ -n "$W_VENV" ]; then
-        echo "   -> [SYNC] Installing Studio requirements from $CORE_REQ..."
-        source "$W_VENV/bin/activate"
-        # Instalăm tot ce are nevoie Studio (librosa, opentimelineio, etc.)
-        pip install -r "$CORE_REQ" --no-cache-dir
-        deactivate
-    else
-        echo "   ⚠️  [WARNING] No VENV found in $WEBUI_DIR. Skipping pip install."
+    # --- 🎵 AUDIO STACK ---
+    AUDIO_REQ="$WEBUI_DIR/backend/coozila/audio/requirements.txt"
+    if [ -f "$AUDIO_REQ" ]; then
+        echo "   -> [SYNC] Installing Audio Node dependencies (Librosa, Numpy)..."
+        pip install -r "$AUDIO_REQ" --no-cache-dir
     fi
+
+    # --- 🎬 STUDIO/ORCHESTRATOR STACK ---
+    STUDIO_REQ="$WEBUI_DIR/backend/coozila/studio/requirements.txt"
+    if [ -f "$STUDIO_REQ" ]; then
+        echo "   -> [SYNC] Installing Studio Orchestrator dependencies (OTIO, FFmpeg)..."
+        pip install -r "$STUDIO_REQ" --no-cache-dir
+    fi
+
+    # --- 🎨 VIDEO/UPSCALER STACK ---
+    VIDEO_REQ="$WEBUI_DIR/backend/coozila/video/requirements.txt"
+    if [ -f "$VIDEO_REQ" ]; then
+        echo "   -> [SYNC] Installing Video/Upscaler dependencies (Multipart, HTTPX)..."
+        pip install -r "$VIDEO_REQ" --no-cache-dir
+    fi
+
+    deactivate
+else
+    echo "   ⚠️  [WARNING] No Virtual Environment found in $WEBUI_DIR. Please install manually."
 fi
 
-echo -e "✅ [STUDIO SETUP] Multi-layer injection and dependency sync complete.\n"
+echo -e "✅ [STUDIO SETUP] Distributed microservice sync complete.\n"

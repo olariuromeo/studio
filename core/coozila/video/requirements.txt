@@ -1,0 +1,20 @@
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# File: coozila/video/requirements.txt
+# Role: Rendering & AI Processing Node (GPU Worker)
+# ----------------------------------------------------------------------------------#
+
+# --- 🛰️ MICROSERVICE COMMUNICATION ---
+fastapi>=0.110.0         # API to receive render/upscale commands
+uvicorn>=0.27.0           # ASGI server for the Worker Node
+httpx>=0.27.0             # Used to report job status back to the Brain
+pydantic>=2.6.0           # Job payload validation
+
+# --- 🎨 MEDIA PROCESSING ---
+python-multipart>=0.0.9   # Support for receiving raw video/image frames
+# Note: AI frameworks (torch/cuda) are usually installed at the System level 
+# or via specific Docker base images for performance.

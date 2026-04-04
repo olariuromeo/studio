@@ -1,13 +1,20 @@
-# ============================================================================ #
-# Coozila! Core v4.0 - Open WebUI Backend Requirements
-# ============================================================================ #
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# File: coozila/studio/requirements.txt
+# Role: Central Orchestrator & Project Lifecycle Manager
+# ----------------------------------------------------------------------------------#
 
-# --- Audio Processing ---
-librosa==0.10.1          # Analiză BPM și frecvențe pentru sync
-resampy==0.4.3           # Necesar pentru backend-ul librosa
-soundfile==0.12.1        # Citire fișiere audio (wav, mp3)
+# --- 🛰️ MICROSERVICE ORCHESTRATION ---
+fastapi>=0.110.0         # Main Studio API for Frontend communication
+uvicorn>=0.27.0           # ASGI server for the Orchestrator
+httpx>=0.27.0             # "The Radio" - Calls Audio/Video nodes via network
+pydantic>=2.6.0           # OTIO Schema validation
 
-# --- Video & Workflow ---
-ffmpeg-python==0.2.0     # Bridge pentru procesare video finală
-aiohttp>=3.9.3           # Request-uri ultra-rapide către ComfyUI
-pydantic>=2.0.0          # Validare date pentru timeline-ul nostru
+# --- 🎬 TIMELINE & MASTERING ---
+opentimelineio>=0.15.0    # Professional industry-standard timeline schema
+ffmpeg-python>=0.2.0      # FFmpeg bridge for final video assembly
+python-dotenv>=1.0.0      # Management for API keys and Node URLs
