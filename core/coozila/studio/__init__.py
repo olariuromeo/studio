@@ -9,4 +9,4 @@
 # Description: Initializes the Video Studio package. Exports core orchestration 
 #              classes for high-level integration.
 
-from open_webui.coozila.video.studio.orchestrator import VideoStudioManager
+from open_webui.studio.orchestrator import VideoStudioManager

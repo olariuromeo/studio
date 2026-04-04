@@ -5,7 +5,7 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 
-# Location: coozila/video/studio/audio_sync.py
+# Location: studio/audio_sync.py
 # Description: Audio Analysis Engine. Detects BPM, onset strength, and rhythmic 
 #              patterns to calculate beat-perfect transition points for the 
 #              Studio Timeline.

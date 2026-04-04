@@ -6,53 +6,38 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: scripts/setup-studio.sh
-# Description: Professional Tier Orchestrator for Studio & Custom WebUI Patches.
+# Description: Root-Level Namespace Orchestrator (Coozila Ecosystem).
 # ----------------------------------------------------------------------------------#
 set -e
 
 # 0. Context Alignment
 STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEBUI_DIR="$STUDIO_ROOT/apps/open-webui"
-COMFY_DIR="$STUDIO_ROOT/apps/ComfyUI"
-COMPOSE_WEBUI="$STUDIO_ROOT/compose/open-webui"
+CORE_SRC="$STUDIO_ROOT/core"
 
-echo -e "\n🛠️  [STUDIO SETUP] Initializing Multi-Layer Injection..."
-
-# Generic deployment function
-deploy() {
-    local src="$1"
-    local dest="$2"
-    local label="$3"
-
-    if [ -d "$src" ]; then
-        echo "   -> [DEPLOY] Injecting $label into $(basename "$dest")..."
-        mkdir -p "$dest"
-        # -r (recursive), -v (verbose), -u (update/overwrite if newer)
-        cp -rvu "$src/"* "$dest/" 2>/dev/null
-    else
-        echo "   -> [SKIP] $label source folder missing ($src)."
-    fi
-}
+echo -e "\n🛰️  [COOZILA DEPLOY] Synchronizing Root Namespace Ecosystem..."
 
 # ----------------------------------------------------------------------------------#
-# PHASE 1: STUDIO FEATURE INJECTION
+# PHASE 1: ATOMIC MIRROR DEPLOYMENT
 # ----------------------------------------------------------------------------------#
-# These are the base studio components (Canvas UI and Core API logic)
-deploy "$STUDIO_ROOT/canvas" "$WEBUI_DIR/src" "Studio Canvas Frontend"
-deploy "$STUDIO_ROOT/core" "$WEBUI_DIR/backend" "Studio Core Backend"
+# Acest pas copiază folderul 'coozila' direct în root și 'static/canvas' în locul lui
+if [ -d "$CORE_SRC" ]; then
+    echo "   -> [MIRROR] Overwriting apps/open-webui with core/ assets..."
+    # -r: recursiv, -v: verbose, -u: update (nu rescrie dacă fișierul e identic/mai nou)
+    cp -rvu "$CORE_SRC/"* "$WEBUI_DIR/"
+else
+    echo "   ⚠️  [ERROR] Source folder 'core/' missing! Deployment aborted."
+    exit 1
+fi
 
 # ----------------------------------------------------------------------------------#
 # PHASE 2: CUSTOM COMPOSE PATCHES (The Final Authority)
 # ----------------------------------------------------------------------------------#
-# This folder contains your specific modifications to the Open-WebUI core files.
-# It maps directly from compose/open-webui/ to apps/open-webui/
-echo "📂 [PHASE 2] Applying Custom Compose Overlays..."
-
+# Aici rămân patch-urile tale specifice (ex: modificările în main.py)
+COMPOSE_WEBUI="$STUDIO_ROOT/compose/open-webui"
 if [ -d "$COMPOSE_WEBUI" ]; then
-    echo "   -> Patching Open-WebUI with files from compose/open-webui/..."
-    cp -rvu "$COMPOSE_WEBUI/"* "$WEBUI_DIR/" 2>/dev/null
-else
-    echo "   ⚠️  [WARNING] Compose patches folder missing at $COMPOSE_WEBUI"
+    echo "📂 [PHASE 2] Applying Custom Compose Overlays (Patches)..."
+    cp -rvu "$COMPOSE_WEBUI/"* "$WEBUI_DIR/"
 fi
 
 # ----------------------------------------------------------------------------------#
@@ -60,26 +45,23 @@ fi
 # ----------------------------------------------------------------------------------#
 echo "🐍 [PHASE 3] Synchronizing Python Stacks..."
 
-CORE_REQ="$STUDIO_ROOT/core/requirements.txt"
+# Noua locație modulară a cerințelor
+CORE_REQ="$CORE_SRC/coozila/studio/requirements.txt"
+
 if [ -f "$CORE_REQ" ]; then
-    # Detect active WebUI VENV
+    # Detectăm VENV-ul activ din Open-WebUI
     W_VENV=""
     [ -d "$WEBUI_DIR/backend/venv" ] && W_VENV="$WEBUI_DIR/backend/venv"
     [ -d "$WEBUI_DIR/venv" ] && W_VENV="$WEBUI_DIR/venv"
 
     if [ -n "$W_VENV" ]; then
-        echo "   -> [SYNC] Installing Studio Core requirements in WebUI VENV..."
+        echo "   -> [SYNC] Installing Studio requirements from $CORE_REQ..."
         source "$W_VENV/bin/activate"
+        # Instalăm tot ce are nevoie Studio (librosa, opentimelineio, etc.)
         pip install -r "$CORE_REQ" --no-cache-dir
         deactivate
-    fi
-    
-    # Sync ComfyUI VENV as well
-    if [ -d "$COMFY_DIR/venv" ]; then
-        echo "   -> [SYNC] Installing Studio Core requirements in ComfyUI VENV..."
-        source "$COMFY_DIR/venv/bin/activate"
-        pip install -r "$CORE_REQ" --no-cache-dir
-        deactivate
+    else
+        echo "   ⚠️  [WARNING] No VENV found in $WEBUI_DIR. Skipping pip install."
     fi
 fi
 

@@ -16,13 +16,13 @@ import asyncio
 import copy
 
 # --- IMPORTURI ABSOLUTE (FIXED FOR OPEN-WEBUI) ---
-from open_webui.coozila.video.studio.style_analyzer import analyze_custom_style
-from open_webui.coozila.video.studio.memory_manager import save_project_state, load_project_state
-from open_webui.coozila.video.studio.style_engine import StyleEngine
-from open_webui.coozila.video.studio.payload_factory import CoozilaPayloadFactory
-from open_webui.coozila.video.studio.comfy_client import send_to_comfyui_and_wait
-from open_webui.coozila.video.studio.media_processor import merge_videos_and_audio_ffmpeg
-from open_webui.coozila.video.studio.audio_sync import AudioSyncEngine
+from studio.style_analyzer import analyze_custom_style
+from open_webui.studio.memory_manager import save_project_state, load_project_state
+from open_webui.studio.style_engine import StyleEngine
+from open_webui.studio.payload_factory import CoozilaPayloadFactory
+from open_webui.studio.comfy_client import send_to_comfyui_and_wait
+from open_webui.studio.media_processor import merge_videos_and_audio_ffmpeg
+from open_webui.studio.audio_sync import AudioSyncEngine
 
 class VideoStudioManager:
     """

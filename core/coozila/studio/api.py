@@ -15,7 +15,7 @@ import json
 import logging
 
 # Importăm Managerul folosind calea absolută configurată pentru Open WebUI
-from open_webui.coozila.video.studio.orchestrator import VideoStudioManager
+from open_webui.studio.orchestrator import VideoStudioManager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

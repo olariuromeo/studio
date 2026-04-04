@@ -16,10 +16,10 @@ from pydantic import BaseModel, Field
 from typing import Callable, Awaitable, Any
 
 # Importăm modulele noastre din backend-ul Coozila pe care le-am scris anterior
-from coozila.video.studio.payload_builder import build_dynamic_json_payload, load_base_template
-from coozila.video.studio.comfy_client import send_to_comfyui_and_wait
-from coozila.video.studio.media_processor import merge_videos_and_audio_ffmpeg, extract_last_frame
-from coozila.video.studio.memory_manager import save_session_to_memory
+from studio.payload_factory import build_dynamic_json_payload, load_base_template
+from studio.comfy_client import send_to_comfyui_and_wait
+from studio.media_processor import merge_videos_and_audio_ffmpeg, extract_last_frame
+from studio.memory_manager import save_session_to_memory
 
 class Tools:
     class Valves(BaseModel):

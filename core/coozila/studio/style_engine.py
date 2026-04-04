@@ -10,7 +10,7 @@
 #              user intent to build a standardized style package for Wan 2.2.
 #              Ensures consistent visual identity across the entire project.
 
-from open_webui.coozila.video.studio.styles import STYLE_PRESETS
+from open_webui.studio.styles import STYLE_PRESETS
 
 class StyleEngine:
     """
