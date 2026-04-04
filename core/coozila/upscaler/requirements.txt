@@ -1,0 +1,26 @@
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# File: coozila/upscaler/requirements.txt
+# Role: 8K Tiled Upscaler Node (GPU Worker)
+# ----------------------------------------------------------------------------------#
+
+# --- 🛰️ MICROSERVICE INFRASTRUCTURE ---
+fastapi>=0.110.0          # API Framework to receive upscale commands
+uvicorn>=0.27.0            # ASGI server to run the Upscaler Node
+httpx>=0.27.0              # Used for health checks and reporting status
+pydantic>=2.6.0            # Data validation for image processing payloads
+python-multipart>=0.0.9    # Required if images are uploaded directly via API
+
+# --- 🧩 IMAGE PROCESSING & TILING ---
+Pillow>=10.2.0             # Primary library for image manipulation (Crop/Paste/Stitch)
+numpy>=1.26.0              # Used for high-speed tile matrix calculations
+
+# --- 🤖 AI & GPU ACCELERATION ---
+# Note: In a production "Tank", these are often pre-installed in the Docker 
+# image (nvidia/cuda) but are listed here for local environment parity.
+# torch>=2.2.0             # Required for the actual AI Upscaling models
+# torchvision>=0.17.0      # Required for AI image transformations
