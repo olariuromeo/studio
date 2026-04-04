@@ -1,13 +1,3 @@
-# ----------------------------------------------------------------------------------#
-#                                                                                   #
-#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
-#   Coozila! Team    lab@coozila.com                                                #
-#                                                                                   #
-# ----------------------------------------------------------------------------------#
-# Document: project-structure.md
-# Description: System Architecture and Exact Directory Map for Coozila! Studio v4.0.
-# ----------------------------------------------------------------------------------#
-
 # 🏗️ Coozila! Video Studio Architecture
 
 The ecosystem relies on an **Overlay & Orchestration** model built on a Bare-Metal Multi-VENV architecture:
