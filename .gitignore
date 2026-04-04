@@ -5,17 +5,37 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: .gitignore
-# Description: Prevents upstream third-party apps, huge video outputs, and temporary 
-#              build files from polluting the Coozila! Studio repository.
+# Description: Prevents heavy assets, sessions, and environment secrets from
+#              polluting the Coozila! Studio repository.
 # ----------------------------------------------------------------------------------#
 
-# Ignorăm aplicațiile third-party (tot ce e clonat/submodule)
+# --- 🚀 CLONED APPLICATIONS ---
+# Ignore third-party apps (Open-WebUI, ComfyUI, etc.)
 apps/
 
-# Ignorăm volumele locale unde containerele scriu date / video / cache
+# --- 💾 PERSISTENT DATA & ASSETS ---
+# Main data volume for sessions, metadata, and user project storage
+data/
+
+# Local temporary assets and outputs
 sessions/
 exports/
 temp_assets/
+*.mp4
+*.gif
+*.wav
+*.mp3
 
-# Securitate
+# --- 🐍 PYTHON ENVIRONMENT ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
 .env
+
+# --- 🖥️ OS SPECIFIC ---
+.DS_Store
+Thumbs.db
