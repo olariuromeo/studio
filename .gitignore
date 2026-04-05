@@ -5,60 +5,36 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: .gitignore
-# Description: "Shell Tracking" Strategy for Submodules & Nested Apps.
-#              Tracks parent folders, ignores internal artifacts.
+# Description: Universal Shell Strategy for Apps & Data. 
+#              Scalable for infinite nested applications.
 # ----------------------------------------------------------------------------------#
 
-# --- 🚀 APPS SHELL TRACKING ---
-# Ensure Git sees the app folder, but ignores every single file inside it.
-apps/*/*
+# --- 🚀 UNIVERSAL APPS SHELL ---
+# 1. Ignore everything inside any subfolder of apps/
+apps/*/**
 
-# Ensure the root directories for each app remain visible in the tree.
+# 2. Allow the main directory for each app to be tracked (the pointer)
 !apps/*/
 
-# Recursive catch-all for build/env artifacts across the whole project.
-**/node_modules/
-**/venv/
-**/build/
-**/dist/
-**/.cache/
-**/.svelte-kit/
-**/.env*
-**/package-lock.json
-**/yarn.lock
+# --- 💾 UNIVERSAL DATA SHELL ---
+# 1. Ignore everything inside the data/ folder
+data/**
 
-# --- 💾 PERSISTENT DATA & ASSETS ---
-# Keep the directory structure, ignore the heavy media files.
-data/coozila/outputs/*
-data/coozila/sessions/*
-data/coozila/exports/*
-data/coozila/assets/*
+# 2. Keep only the data/ directory itself tracked
+!data/
+!data/.gitkeep
 
-# Preserve directories via .gitkeep
-!data/coozila/outputs/.gitkeep
-!data/coozila/sessions/.gitkeep
-!data/coozila/exports/.gitkeep
-!data/coozila/assets/.gitkeep
-
-# Global Media & Log Exclusions
-*.mp4
-*.gif
-*.wav
-*.mp3
-*.log
-*.sqlite
-*.sqlite-journal
-
-# --- 🐍 PYTHON ENVIRONMENT ---
+# --- 🐍 ROOT CORE PROTECTIONS ---
+# Rules for the core/ and dev/ folders (outside of apps).
 **/__pycache__/
 **/*.py[cod]
-**/*$py.class
+.env
+.env.*
 .python-version
-.asdf/
-.tool-versions
 
 # --- 🖥️ OS & IDE SPECIFIC ---
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.log
