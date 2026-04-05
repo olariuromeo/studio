@@ -5,26 +5,35 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: .gitignore
-# Description: Prevents heavy assets, sessions, and environment secrets from
-#              polluting the Coozila! Studio repository.
+# Description: Standard exclusion rules for Coozila! Studio. 
+#              Note: 'apps/' is NOT ignored to allow Submodule tracking.
 # ----------------------------------------------------------------------------------#
 
-# --- 🚀 CLONED APPLICATIONS ---
-# Ignore third-party apps (Open-WebUI, ComfyUI, etc.)
-apps/
+# --- 🚀 CLONED APPLICATIONS (Submodules) ---
+# We DO NOT ignore apps/ because we need to track Git Submodule pointers.
+# However, we ignore potential local garbage inside those folders.
+apps/*/venv/
+apps/*/.env
+apps/*/node_modules/
 
-# --- 💾 PERSISTENT DATA & ASSETS ---
-# Main data volume for sessions, metadata, and user project storage
-data/
+# --- 💾 PERSISTENT DATA & ASSETS (Large Files) ---
+# We ignore the CONTENT of data/ to prevent committing 8K videos and audio.
+data/coozila/outputs/*
+data/coozila/sessions/*
+data/coozila/exports/*
+data/coozila/temp_assets/*
 
-# Local temporary assets and outputs
-sessions/
-exports/
-temp_assets/
+# Keep the directory structure but ignore files
+!data/coozila/outputs/.gitkeep
+!data/coozila/sessions/.gitkeep
+!data/coozila/exports/.gitkeep
+
+# Ignore any loose media files in root
 *.mp4
 *.gif
 *.wav
 *.mp3
+*.log
 
 # --- 🐍 PYTHON ENVIRONMENT ---
 __pycache__/
@@ -32,10 +41,11 @@ __pycache__/
 *$py.class
 .venv/
 venv/
-ENV/
 env/
 .env
 
-# --- 🖥️ OS SPECIFIC ---
+# --- 🖥️ OS & IDE SPECIFIC ---
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
