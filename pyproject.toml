@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coozila-studio"
+version = "4.0.0"
+description = "Professional Latent Orchestrator for Deterministic Cinema, Audio-Reactive Video Synthesis, and AI Production Workflows"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Coozila! Team", email = "lab@coozila.com"}
+]
+keywords = ["ai-video", "comfyui", "wan2.2", "prompt-relay", "cinematography", "cuda-12.5"]
+dependencies = [
+    "fastapi",
+    "pydantic",
+    "uvicorn",
+    "python-multipart",
+    "aiohttp",
+    "librosa",
+    "numpy"
+]
+
+[tool.setuptools]
+# Definirea ierarhiei complete: Namespace (coozila) -> Pachet (studio) -> Sub-pachete (video, etc.)
+packages = [
+    "coozila",
+    "coozila.studio",
+    "coozila.studio.video"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["coozila*"]
+namespaces = true
