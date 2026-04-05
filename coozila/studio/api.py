@@ -16,9 +16,9 @@ import logging
 from coozila.studio.orchestrator import VideoStudioManager
 
 # Importing Clients for Distributed Nodes (Microservices)
-from coozila.upscaler.client import trigger_upscale
-from coozila.interpolation.client import trigger_interpolation
-from coozila.encoder.client import trigger_final_mastering
+from coozila.studio.upscaler.client import trigger_upscale
+from coozila.studio.interpolation.client import trigger_interpolation
+from coozila.studio.encoder.client import trigger_final_mastering
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
