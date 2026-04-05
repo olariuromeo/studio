@@ -16,6 +16,7 @@
 [submodule "apps/otioview"]
 	path = apps/otioview
 	url = https://github.com/kabballa/otioview.git
+
 [submodule "ComfyUI"]
 	path = ComfyUI
 	url = https://github.com/kabballa/ComfyUI.git
