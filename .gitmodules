@@ -2,15 +2,19 @@
 	path = apps/open-webui
 	url = https://github.com/kabballa/open-webui.git
 	branch = dev
+	ignore = all
 
 [submodule "apps/otio"]
 	path = apps/otio
 	url = https://github.com/kabballa/otio.git
+	ignore = all
 
 [submodule "apps/otioview"]
 	path = apps/otioview
 	url = https://github.com/kabballa/otioview.git
+	ignore = all
 	
 [submodule "apps/ComfyUI"]
 	path = apps/ComfyUI
 	url = https://github.com/kabballa/ComfyUI.git
+	ignore = all
