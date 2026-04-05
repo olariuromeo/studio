@@ -3,11 +3,6 @@
 	path = apps/open-webui
 	url = https://github.com/kabballa/open-webui.git
 
-# --- 🧠 AI GENERATION ENGINE (The Neural Cortex) ---
-[submodule "apps/comfyui"]
-    path = apps/comfyui
-    url = https://github.com/kabballa/comfyui.git
-
 # --- 🎞️ TIMELINE & VFX STACK (The Pulse) ---
 [submodule "apps/otio"]
 	path = apps/otio
