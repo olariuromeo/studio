@@ -5,47 +5,61 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: .gitignore
-# Description: Standard exclusion rules for Coozila! Studio. 
-#              Note: 'apps/' is NOT ignored to allow Submodule tracking.
+# Description: Global exclusion rules for Coozila! Studio. 
+#              Updated to support Root Engine (ComfyUI) & Nested Apps.
 # ----------------------------------------------------------------------------------#
 
-# --- 🚀 CLONED APPLICATIONS (Submodules) ---
-# We DO NOT ignore apps/ because we need to track Git Submodule pointers.
-# However, we ignore potential local garbage inside those folders.
-apps/*/venv/
-apps/*/.env
-apps/*/node_modules/
+# --- 🚀 CLONED APPLICATIONS & SUBMODULES ---
+# Allow tracking of the pointers, ignore the local mess inside.
+**/node_modules/
+**/venv/
+**/.env
+**/.env.*
+**/package-lock.json
+**/yarn.lock
 
-# --- 💾 PERSISTENT DATA & ASSETS (Large Files) ---
-# We ignore the CONTENT of data/ to prevent committing 8K videos and audio.
+# --- 🎨 FRONTEND & CANVAS ARTIFACTS ---
+# Essential for WebUI and Canvas development.
+**/.svelte-kit/
+**/build/
+**/dist/
+**/.cache/
+**/.turbo/
+
+# --- 💾 PERSISTENT DATA & ASSETS ---
+# Protect the "Tank" from committing heavy media.
 data/coozila/outputs/*
 data/coozila/sessions/*
 data/coozila/exports/*
 data/coozila/temp_assets/*
 
-# Keep the directory structure but ignore files
+# Directory preservation
 !data/coozila/outputs/.gitkeep
 !data/coozila/sessions/.gitkeep
 !data/coozila/exports/.gitkeep
 
-# Ignore any loose media files in root
+# Global Media Exclusions
 *.mp4
 *.gif
 *.wav
 *.mp3
 *.log
+*.sqlite
+*.sqlite-journal
 
 # --- 🐍 PYTHON ENVIRONMENT ---
-__pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-env/
-.env
+# Aggressive cleanup to match your setup-webui.sh logic.
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/.pytest_cache/
+**/.ipynb_checkpoints/
+.python-version
 
 # --- 🖥️ OS & IDE SPECIFIC ---
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+.asdf/
+.tool-versions
