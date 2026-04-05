@@ -5,40 +5,42 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: .gitignore
-# Description: Global exclusion rules for Coozila! Studio. 
-#              Updated to support Root Engine (ComfyUI) & Nested Apps.
+# Description: "Shell Tracking" Strategy for Submodules & Nested Apps.
+#              Tracks parent folders, ignores internal artifacts.
 # ----------------------------------------------------------------------------------#
 
-# --- 🚀 CLONED APPLICATIONS & SUBMODULES ---
-# Allow tracking of the pointers, ignore the local mess inside.
+# --- 🚀 APPS SHELL TRACKING ---
+# Ensure Git sees the app folder, but ignores every single file inside it.
+apps/*/*
+
+# Ensure the root directories for each app remain visible in the tree.
+!apps/*/
+
+# Recursive catch-all for build/env artifacts across the whole project.
 **/node_modules/
 **/venv/
-**/.env
-**/.env.*
-**/package-lock.json
-**/yarn.lock
-
-# --- 🎨 FRONTEND & CANVAS ARTIFACTS ---
-# Essential for WebUI and Canvas development.
-**/.svelte-kit/
 **/build/
 **/dist/
 **/.cache/
-**/.turbo/
+**/.svelte-kit/
+**/.env*
+**/package-lock.json
+**/yarn.lock
 
 # --- 💾 PERSISTENT DATA & ASSETS ---
-# Protect the "Tank" from committing heavy media.
+# Keep the directory structure, ignore the heavy media files.
 data/coozila/outputs/*
 data/coozila/sessions/*
 data/coozila/exports/*
-data/coozila/temp_assets/*
+data/coozila/assets/*
 
-# Directory preservation
+# Preserve directories via .gitkeep
 !data/coozila/outputs/.gitkeep
 !data/coozila/sessions/.gitkeep
 !data/coozila/exports/.gitkeep
+!data/coozila/assets/.gitkeep
 
-# Global Media Exclusions
+# Global Media & Log Exclusions
 *.mp4
 *.gif
 *.wav
@@ -48,18 +50,15 @@ data/coozila/temp_assets/*
 *.sqlite-journal
 
 # --- 🐍 PYTHON ENVIRONMENT ---
-# Aggressive cleanup to match your setup-webui.sh logic.
 **/__pycache__/
 **/*.py[cod]
 **/*$py.class
-**/.pytest_cache/
-**/.ipynb_checkpoints/
 .python-version
+.asdf/
+.tool-versions
 
 # --- 🖥️ OS & IDE SPECIFIC ---
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-.asdf/
-.tool-versions
