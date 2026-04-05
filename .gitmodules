@@ -1,7 +1,7 @@
 # --- 🎨 UI & INTERFACE (The Canvas) ---
 [submodule "apps/open-webui"]
-    path = apps/open-webui
-    url = https://github.com/kabballa/open-webui.git
+	path = apps/open-webui
+	url = https://github.com/kabballa/open-webui.git
 
 # --- 🧠 AI GENERATION ENGINE (The Neural Cortex) ---
 [submodule "apps/comfyui"]
@@ -16,3 +16,6 @@
 [submodule "apps/otioview"]
     path = apps/otioview
     url = https://github.com/kabballa/otioview.git
+[submodule "ComfyUI"]
+	path = ComfyUI
+	url = https://github.com/kabballa/ComfyUI.git
