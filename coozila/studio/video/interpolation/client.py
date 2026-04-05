@@ -55,7 +55,7 @@ async def trigger_interpolation(input_path: str, target_fps: int = 60):
     logger.info("Processing interpolation on local GPU engine (RTX 3080)...")
     
     try:
-        from coozila.studio.interpolation.engine import local_interpolation_process
+        from coozila.studio.video.interpolation.engine import local_interpolation_process
         result = await local_interpolation_process(input_path, target_fps)
         return {
             "status": "success", 

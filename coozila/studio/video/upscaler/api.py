@@ -16,7 +16,7 @@ import os
 from PIL import Image
 
 # Internal Coozila Imports
-from coozila.upscaler.tile_manager import TileManager
+from coozila.studio.video.upscaler.tile_manager import TileManager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

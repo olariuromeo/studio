@@ -6,24 +6,44 @@
 # ----------------------------------------------------------------------------------#
 # Location: coozila/studio/api.py
 # Description: Studio API Bridge. Orchestrates Audio, Video, and Remote Scaling.
+#              Aggregates distributed sub-modules into a unified namespace.
+# ----------------------------------------------------------------------------------#
 
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 import logging
 
-# --- 🛰️ COOZILA ECOSYSTEM IMPORTS ---
-# Importing the Manager from the Root Namespace
+# --- COOZILA INTERNAL MODULES ---
+from coozila.studio.config import INTERNAL_TOKEN
 from coozila.studio.orchestrator import VideoStudioManager
 
-# Importing Clients for Distributed Nodes (Microservices)
-from coozila.studio.upscaler.client import trigger_upscale
-from coozila.studio.interpolation.client import trigger_interpolation
-from coozila.studio.encoder.client import trigger_final_mastering
+# --- DISTRIBUTED CLIENTS (Hybrid Microservices) ---
+from coozila.studio.video.upscaler.client import trigger_upscale
+from coozila.studio.video.interpolation.client import trigger_interpolation
+from coozila.studio.video.encoder.client import trigger_final_mastering
+from coozila.studio.audio.analyzer.client import trigger_audio_analysis, get_sync_points
 
-router = APIRouter()
+# --- SUB-ROUTERS IMPORT ---
+from coozila.studio.video.interpolation.api import router as interpolation_router
+from coozila.studio.video.upscaler.api import router as upscaler_router
+from coozila.studio.video.encoder.api import router as encoder_router
+from coozila.studio.audio.analyzer.api import router as audio_router
+
+# Initialize the root Studio router
+router = APIRouter(prefix="/api/v1/coozila/studio", tags=["Studio Core"])
 logger = logging.getLogger(__name__)
 
-# --- 📝 DATA MODELS (Request Validation) ---
+# --- MOUNT HIERARCHICAL SUB-ROUTERS ---
+# Video Domain: /api/v1/coozila/studio/video/...
+router.include_router(interpolation_router, prefix="/video")
+router.include_router(upscaler_router, prefix="/video")
+router.include_router(encoder_router, prefix="/video")
+
+# Audio Domain: /api/v1/coozila/studio/audio/...
+router.include_router(audio_router, prefix="/audio")
+
+
+# --- DATA MODELS ---
 
 class StudioAction(BaseModel):
     session_id: str
@@ -31,67 +51,68 @@ class StudioAction(BaseModel):
     payload: dict = {}
 
 class RenderRequest(BaseModel):
-    path: str
+    input_path: str
+    audio_path: str
+    output_path: str
     is_preview: bool = True
-    use_remote_upscale: bool = False
+    use_remote_nodes: bool = True
 
-# --- 🚀 API ROUTES ---
+
+# --- CORE STUDIO ROUTES ---
 
 @router.post("/action")
 async def handle_studio_action(data: StudioAction, request: Request):
     """
     Main endpoint for Studio Canvas actions.
-    Manages communication between the Frontend and the Orchestrator.
+    Coordinates session state via VideoStudioManager.
     """
-    # Verify authenticated user within Open WebUI context
-    user = getattr(request.state, "user", None)
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized - Invalid Session")
+    # Logic remains local to the Studio Orchestrator
+    user_id = getattr(request.state, "user_id", "default_user")
+    manager = VideoStudioManager(data.session_id, user_id)
+    
+    logger.info(f"Studio Action: {data.action} | Session: {data.session_id}")
 
-    # Initialize Manager from the Coozila Namespace
-    manager = VideoStudioManager(data.session_id, user.id)
-    logger.info(f"🎬 [STUDIO API] Action: {data.action} | Session: {data.session_id}")
-
-    # 1. Project Schema Management (OTIO Context)
     if data.action == "get_schema":
         return {"status": "success", "schema": manager.schema}
     
-    # 2. Audio Synchronization (Pulse & Analysis)
     elif data.action == "sync_audio":
         audio_path = data.payload.get("audio_path")
-        await manager.auto_sync_timeline_to_audio(audio_path)
-        return {"status": "success", "schema": manager.schema}
-
-    # 3. Style Application / Casting
-    elif data.action == "apply_style":
-        style_id = data.payload.get("style_id")
-        success = manager.apply_style_from_library(style_id)
+        # Uses the Audio Client to decide Local vs Remote
+        analysis = await trigger_audio_analysis(audio_path)
+        success = await manager.apply_audio_analysis(analysis)
         return {"status": "success" if success else "error", "schema": manager.schema}
 
-    return {"status": "error", "message": f"Action '{data.action}' not recognized."}
+    raise HTTPException(status_code=400, detail=f"Action '{data.action}' unknown.")
+
 
 @router.post("/render")
 async def start_render(data: RenderRequest):
     """
-    Handles the rendering pipeline. 
-    Can run locally or delegate tasks to remote nodes (Upscaler/RIFE).
+    Triggers the cinematic rendering pipeline using Hybrid Scaling.
+    Delegates Interpolation, Upscaling, and Encoding based on NODE_REGISTRY.
     """
-    logger.info(f"🎥 [RENDER ENGINE] Starting process for: {data.path}")
+    logger.info(f"Initiating Render Pipeline for: {data.output_path}")
     
     try:
-        # If High-Res Upscale is requested (Phase C)
-        if data.use_remote_upscale:
-            logger.info("📡 [REMOTE] Delegating to Tiled Upscaler Node...")
-            status = await trigger_upscale(data.path)
-            return {"status": "delegated", "node": "upscaler", "response": status}
+        # Phase 1: Interpolation (if not preview)
+        if not data.is_preview:
+            await trigger_interpolation(data.input_path)
 
-        # Standard Preview Execution (Phase A)
-        # Here we could call local logic or an interpolation client
-        return {"status": "success", "message": "Render started successfully."}
+        # Phase 2: High-Res Upscaling
+        await trigger_upscale(data.input_path)
+
+        # Phase 3: Final Mastering (Muxing Video + Audio)
+        result = await trigger_final_mastering(
+            input_path=data.input_path,
+            audio_path=data.audio_path,
+            output_path=data.output_path
+        )
         
-    except Exception as e:
-        logger.error(f"❌ [RENDER ERROR] {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Render pipeline failed: {str(e)}")
+        return result
 
-# Confirmation message for the Open-WebUI logs
-print("🚀 [COOZILA] Studio API (Root Namespace): LOADED & READY")
+    except Exception as e:
+        logger.error(f"Render Pipeline Failure: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# System initialization log
+print("Coozila Studio API (Root Namespace): Video & Audio Hierarchies Mounted.")

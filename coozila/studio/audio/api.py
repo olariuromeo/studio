@@ -4,7 +4,7 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-# Location: coozila/audio/api.py
+# Location: coozila/studio/audio/analyzer/api.py
 # Description: Audio Service API. Provides endpoints for BPM detection, 
 #              rhythmic analysis, and beat-synced transition calculation.
 # ----------------------------------------------------------------------------------#
@@ -15,9 +15,9 @@ from typing import List, Dict, Any
 import logging
 
 # Internal imports from the Coozila namespace
-from coozila.audio.analyzer import AudioSyncEngine
+from coozila.studio.audio.analyzer.engine import AudioSyncEngine
 
-router = APIRouter()
+router = APIRouter(prefix="/analyzer", tags=["Audio Analysis"])
 logger = logging.getLogger(__name__)
 
 # --- 📝 DATA MODELS (Pydantic Validation) ---
@@ -27,7 +27,7 @@ class AudioAnalysisRequest(BaseModel):
     Data model for an audio analysis request.
     Requires an absolute path to the media file on the shared volume.
     """
-    file_path: str
+    audio_path: str
 
 class SyncPointsRequest(BaseModel):
     """
@@ -55,14 +55,14 @@ async def analyze_audio_track(request: AudioAnalysisRequest):
     Processes the raw audio file to extract BPM and individual beat timestamps.
     This data is used by the Orchestrator to populate the OTIO Metadata.
     """
-    logger.info(f"🎵 [AUDIO API] Initiating analysis for: {request.file_path}")
+    logger.info(f"Initiating analysis for: {request.audio_path}")
     
     # Trigger the heavy-lifting analysis engine
-    analysis = AudioSyncEngine.analyze_track(request.file_path)
+    analysis = AudioSyncEngine.analyze_track(request.audio_path)
     
     # Check if the engine returned fallback data (indicating a potential processing failure)
     if not analysis.get("beat_timestamps") and analysis.get("bpm") == 120.0:
-        logger.warning(f"⚠️ [AUDIO API] Analysis for {request.file_path} resulted in fallback data.")
+        logger.warning(f"Analysis for {request.audio_path} resulted in fallback data.")
     
     return analysis
 
@@ -73,7 +73,7 @@ async def get_rhythmic_cuts(request: SyncPointsRequest):
     Calculates the exact timestamps for video transitions based on musical peaks.
     Used for instant timeline updates when the director changes the number of shots.
     """
-    logger.info(f"✂️ [AUDIO API] Calculating {request.num_shots} sync points for the timeline.")
+    logger.info(f"Calculating {request.num_shots} sync points for the timeline.")
     
     try:
         # Map the requested number of shots to the nearest musical beats
@@ -88,7 +88,7 @@ async def get_rhythmic_cuts(request: SyncPointsRequest):
             "count": len(cut_points)
         }
     except Exception as e:
-        logger.error(f"❌ [AUDIO API] Rhythmic sync calculation failed: {str(e)}")
+        logger.error(f"Rhythmic sync calculation failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Failed to calculate rhythmic sync points."
