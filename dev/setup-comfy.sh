@@ -6,7 +6,7 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: scripts/setup-comfy.sh
-# Description: Self-contained ComfyUI Provisioning (Clone + VENV + Torch).
+# Description: Submodule-based ComfyUI Provisioning (Add/Clone + VENV + Torch).
 # ----------------------------------------------------------------------------------#
 set -e
 
@@ -23,22 +23,29 @@ fi
 COMFY_TAG="${COMFY_TAG:-master}"
 COMFY_PYTHON_VERSION="${COMFY_PYTHON_VERSION:-3.11.9}"
 CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
+# Asigurăm că calea este corectă (ComfyUI la rădăcină)
+COMFY_DIR="${COMFY_DIR:-$STUDIO_ROOT/ComfyUI}"
 
 echo "⚙️  [COMFY] Initializing Backend Engine (Tag: $COMFY_TAG)..."
 
 # ----------------------------------------------------------------------------------#
-# 1. Repository Synchronization
+# 1. Repository Synchronization (Submodule Logic)
 # ----------------------------------------------------------------------------------#
-mkdir -p "$STUDIO_ROOT/apps"
-if [ ! -d "$COMFY_DIR" ]; then
-    echo "   -> Cloning fresh ComfyUI at branch/tag $COMFY_TAG..."
-    git clone --branch "$COMFY_TAG" https://github.com/comfyanonymous/ComfyUI.git "$COMFY_DIR"
+cd "$STUDIO_ROOT"
+if [ ! -d "$COMFY_DIR/.git" ]; then
+    echo "   -> Adding ComfyUI as submodule..."
+    # Ștergem folderul dacă e orfan/fără .git pentru a putea face add
+    [ -d "$COMFY_DIR" ] && rm -rf "$COMFY_DIR"
+    git submodule add -f https://github.com/kabballa/ComfyUI.git ComfyUI
 else
-    echo "   -> Folder exists. Forcing checkout for consistency: $COMFY_TAG..."
-    cd "$COMFY_DIR"
-    git fetch --all --tags
-    git checkout "tags/$COMFY_TAG" -f || git checkout "$COMFY_TAG" -f
+    echo "   -> Syncing existing ComfyUI submodule..."
+    git submodule update --init --recursive -- ComfyUI
 fi
+
+# Aliniere la versiune
+cd "$COMFY_DIR"
+git fetch --all --tags
+git checkout "$COMFY_TAG" -f
 
 # ----------------------------------------------------------------------------------#
 # 2. Language & Environment Alignment (ASDF)
@@ -70,22 +77,40 @@ pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
     --no-cache-dir
 
 # ----------------------------------------------------------------------------------#
-# 5. Core Requirements & Custom Nodes (Manager)
+# 5. Core Requirements & Custom Nodes (Manager as LAST STEP)
 # ----------------------------------------------------------------------------------#
 echo "📥 [COMFY] Installing Official Requirements..."
-[ -f "requirements.txt" ] && pip install -r requirements.txt
+[ -f "requirements.txt" ] && pip install -r "requirements.txt"
 
-# --- Manager Installation ---
-MANAGER_DIR="$COMFY_DIR/custom_nodes/ComfyUI-Manager"
-if [ ! -d "$MANAGER_DIR" ]; then
-    echo "📦 [COMFY] Cloning ComfyUI-Manager..."
-    git clone https://github.com/ltdrdata/ComfyUI-Manager.git "$MANAGER_DIR"
+# --- Manager Installation (Submodule + Symlink) ---
+INTERNAL_MANAGER_DIR="apps/ComfyUI-Manager"
+MANAGER_TARGET="$COMFY_DIR/custom_nodes/ComfyUI-Manager"
+
+echo "📦 [COMFY] Provisioning ComfyUI-Manager as submodule..."
+cd "$STUDIO_ROOT"
+
+if [ ! -d "$STUDIO_ROOT/$INTERNAL_MANAGER_DIR/.git" ]; then
+    echo "   -> Adding Manager submodule to $INTERNAL_MANAGER_DIR..."
+    [ -d "$STUDIO_ROOT/$INTERNAL_MANAGER_DIR" ] && rm -rf "$STUDIO_ROOT/$INTERNAL_MANAGER_DIR"
+    git submodule add -f https://github.com/kabballa/ComfyUI-Manager.git "$INTERNAL_MANAGER_DIR"
+else
+    git submodule update --init --recursive -- "$INTERNAL_MANAGER_DIR"
 fi
 
+# Crearea legăturii simbolice (Symlink) pentru ca motorul să vadă managerul
+if [ ! -L "$MANAGER_TARGET" ]; then
+    echo "🔗 [COMFY] Linking Manager into custom_nodes..."
+    mkdir -p "$COMFY_DIR/custom_nodes"
+    # Folosim path relativ pentru portabilitate (din ComfyUI/custom_nodes/ în apps/)
+    ln -s "../../$INTERNAL_MANAGER_DIR" "$MANAGER_TARGET"
+fi
+
+# Instalare dependențe Manager
 echo "📦 [COMFY] Installing Manager dependencies..."
-if [ -f "$MANAGER_DIR/requirements.txt" ]; then
-    pip install -r "$MANAGER_DIR/requirements.txt"
+cd "$COMFY_DIR"
+if [ -f "$MANAGER_TARGET/requirements.txt" ]; then
+    ./venv/bin/pip install -r "$MANAGER_TARGET/requirements.txt"
 fi
 
 deactivate
-echo "✅ [COMFY] Environment ready. Backend is fully provisioned and locked."
+echo "✅ [COMFY] Environment ready. Backend is fully provisioned as submodules."
