@@ -10,12 +10,12 @@
 
 # --- 🎞️ TIMELINE & VFX STACK (The Pulse) ---
 [submodule "apps/otio"]
-    path = apps/otio
-    url = https://github.com/kabballa/otio.git
+	path = apps/otio
+	url = https://github.com/kabballa/otio.git
 
 [submodule "apps/otioview"]
-    path = apps/otioview
-    url = https://github.com/kabballa/otioview.git
+	path = apps/otioview
+	url = https://github.com/kabballa/otioview.git
 [submodule "ComfyUI"]
 	path = ComfyUI
 	url = https://github.com/kabballa/ComfyUI.git
