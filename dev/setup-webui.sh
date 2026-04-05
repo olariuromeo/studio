@@ -6,15 +6,16 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: dev/setup-webui.sh
-# Description: Setup for Coozila! Custom WebUI (Submodule Integration)
+# Description: Environment-driven Setup for Coozila! WebUI Submodule
 # ----------------------------------------------------------------------------------#
 set -e
 
-# Disable any verbose or inspection flags
+# Disable verbose/inspect flags
 unset PYTHONVERBOSE
 unset PYTHONINSPECT
 
 # 0. Context & Environment Loading
+# STUDIO_ROOT is the only hardcoded logic to find the .env file
 STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [ -f "$STUDIO_ROOT/.env.dev" ]; then
@@ -23,21 +24,22 @@ else
     export $(grep -v '^#' "$STUDIO_ROOT/.env" | xargs)
 fi
 
-WEBUI_DIR="$STUDIO_ROOT/apps/open-webui"
-
-echo -e "\n🌐 [WEBUI] Syncing Coozila! Custom Submodule ($WEBUI_BRANCH)..."
-
-# 1. Submodule Synchronization (The Kabballa Way)
+# 1. Submodule Registration & Sync
 # ----------------------------------------------------------------------------------#
 cd "$STUDIO_ROOT"
 
-# Ne asigurăm că Git știe de submodul și îl inițializează
-echo "   -> Initializing & Updating Submodule: apps/open-webui..."
-git submodule update --init --recursive -- apps/open-webui
+# Use WEBUI_DIR and WEBUI_REPO from the user's environment
+# If the path is not in .gitmodules, the script registers it automatically
+if ! grep -q "path = $WEBUI_DIR" .gitmodules 2>/dev/null; then
+    echo "   -> [REGISTER] Submodule at $WEBUI_DIR not found. Adding..."
+    git submodule add -f "$WEBUI_REPO" "$WEBUI_DIR"
+fi
 
+echo "   -> Initializing & Updating Submodule at $WEBUI_DIR..."
+git submodule update --init --recursive "$WEBUI_DIR"
+
+# Align with the branch defined in the user's environment
 cd "$WEBUI_DIR"
-
-# Forțăm checkout pe branch-ul de dev definit în .env (dacă e nevoie de tracking)
 echo "   -> Aligning to branch: $WEBUI_BRANCH..."
 git fetch origin
 git checkout "$WEBUI_BRANCH" -f
@@ -45,25 +47,33 @@ git pull origin "$WEBUI_BRANCH"
 
 # 2. Environment Alignment (ASDF)
 # ----------------------------------------------------------------------------------#
+# Write tool versions into the specific user directory
 echo "python $WEBUI_PYTHON_VERSION" > .tool-versions
 echo "nodejs $WEBUI_NODE_VERSION" >> .tool-versions
 
 echo "⚙️  [ASDF] Syncing runtimes..."
-# Verificăm dacă asdf există înainte de a-l apela
 if [ -f "$HOME/.asdf/asdf.sh" ]; then
     . "$HOME/.asdf/asdf.sh"
     asdf install 
     asdf reshim
 else
-    echo "⚠️  [ASDF] Warning: asdf.sh not found. Ensure runtimes are installed manually."
+    echo "⚠️  [ASDF] Warning: asdf.sh not found. Ensure runtimes are installed."
 fi
 
 # 3. Virtual Environment Preparation
 # ----------------------------------------------------------------------------------#
 echo "🐍 [WEBUI] Initializing Python Virtual Environment..."
-python3 -m venv venv
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
 
-# Upgrade pip inside venv
+# Upgrade pip inside the specific venv
 ./venv/bin/python -m pip install --upgrade pip --no-cache-dir
 
-echo -e "✅ [WEBUI] Setup complete for $WEBUI_BRANCH.\n"
+# 4. Finalize Studio Index
+# ----------------------------------------------------------------------------------#
+cd "$STUDIO_ROOT"
+# Sync the parent index with the submodule state to clear Git diffs
+git add "$WEBUI_DIR"
+
+echo -e "✅ [WEBUI] Setup complete for $WEBUI_BRANCH at $WEBUI_DIR.\n"

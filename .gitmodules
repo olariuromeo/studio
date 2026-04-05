@@ -1,6 +1,7 @@
 [submodule "apps/open-webui"]
 	path = apps/open-webui
 	url = https://github.com/kabballa/open-webui.git
+	branch = dev
 
 [submodule "apps/otio"]
 	path = apps/otio

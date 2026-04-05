@@ -5,43 +5,79 @@
 #   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
-# Document: scripts/setup-wan2.sh
-# Description: Minimalist Environment Provisioning for Wan 2.2.
+# Document: dev/setup-wan2.sh
+# Description: Environment-driven Wan 2.2 Wrapper Provisioning
 # ----------------------------------------------------------------------------------#
 set -e
 
-# 1. Path Alignment
-[ -z "$COMFY_DIR" ] && COMFY_DIR="$(pwd)/apps/ComfyUI"
-WRAPPER_DIR="$COMFY_DIR/custom_nodes/ComfyUI-WanVideoWrapper"
-VENV_PATH="$COMFY_DIR/venv"
+# ----------------------------------------------------------------------------------#
+# 0. Context & Environment Loading
+# ----------------------------------------------------------------------------------#
+STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [ -f "$STUDIO_ROOT/.env.dev" ]; then
+    export $(grep -v '^#' "$STUDIO_ROOT/.env.dev" | xargs)
+else
+    export $(grep -v '^#' "$STUDIO_ROOT/.env" | xargs)
+fi
+
+# Ensure mandatory paths are derived from ENV
+WAN_WRAPPER_DIR="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/ComfyUI-WanVideoWrapper"
+COMFY_VENV="$STUDIO_ROOT/$COMFY_DIR/venv"
 
 echo "🚀 [WAN 2.2] Syncing Wrapper & Dependencies..."
 
-# 2. Clone Wrapper
-if [ ! -d "$WRAPPER_DIR" ]; then
-    echo "📦 [WRAPPER] Cloning WanVideoWrapper..."
-    git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git "$WRAPPER_DIR"
+# ----------------------------------------------------------------------------------#
+# 1. Repository Registration & Sync
+# ----------------------------------------------------------------------------------#
+cd "$STUDIO_ROOT"
+
+# Auto-register WAN Wrapper submodule if missing from .gitmodules
+# Note: We treat the wrapper as a submodule to maintain Studio integrity
+if ! grep -q "path = $WAN_REPO_DIR" .gitmodules 2>/dev/null; then
+    echo "   -> [REGISTER] Submodule $WAN_REPO_DIR not found. Adding..."
+    git submodule add -f "$WAN_REPO" "$WAN_REPO_DIR"
 fi
 
-# 3. Dependency Injection
-if [ -f "$VENV_PATH/bin/activate" ]; then
-    source "$VENV_PATH/bin/activate"
-    cd "$WRAPPER_DIR"
-    
-    echo "📥 [PIP] Upgrading build tools..."
-    pip install --upgrade pip setuptools wheel --no-cache-dir
+echo "   -> Syncing WanVideoWrapper submodule..."
+git submodule update --init --recursive -- "$WAN_REPO_DIR"
 
-    echo "📥 [PIP] Installing Requirements..."
-    [ -f "requirements.txt" ] && pip install -r requirements.txt --no-cache-dir
+# ----------------------------------------------------------------------------------#
+# 2. Dependency Injection (ComfyUI VENV)
+# ----------------------------------------------------------------------------------#
+if [ -d "$COMFY_VENV" ]; then
+    echo "⚙️  Injecting dependencies into ComfyUI VENV..."
     
-    echo "📥 [PIP] Injecting Specialized AI Acceleration..."
+    VENV_PIP="$COMFY_VENV/bin/pip"
 
-    pip install onnx onnxruntime-gpu sageattention matrix-nio --no-cache-dir
+    echo "   -> Upgrading build tools..."
+    $VENV_PIP install --upgrade pip setuptools wheel --no-cache-dir
+
+    echo "   -> Installing Wrapper requirements..."
+    if [ -f "$STUDIO_ROOT/$WAN_REPO_DIR/requirements.txt" ]; then
+        $VENV_PIP install -r "$STUDIO_ROOT/$WAN_REPO_DIR/requirements.txt" --no-cache-dir
+    fi
     
-    deactivate
+    echo "   -> Injecting Specialized AI Acceleration..."
+    $VENV_PIP install onnx onnxruntime-gpu sageattention matrix-nio --no-cache-dir
+    
 else
-    echo "❌ [ERROR] VENV not found at $VENV_PATH. Run setup-comfy.sh first."
+    echo "❌ [ERROR] ComfyUI VENV not found at $COMFY_VENV. Run setup-comfy.sh first!"
     exit 1
 fi
 
-echo "✅ [SUCCESS] Wan 2.2 Wrapper is fully provisioned with Face Restoration support."
+# ----------------------------------------------------------------------------------#
+# 3. Linking & Finalize Index
+# ----------------------------------------------------------------------------------#
+# Create Symlink inside ComfyUI custom_nodes if it doesn't exist
+if [ ! -L "$WAN_WRAPPER_DIR" ]; then
+    echo "🔗 [WAN 2.2] Linking Wrapper into ComfyUI custom_nodes..."
+    mkdir -p "$(dirname "$WAN_WRAPPER_DIR")"
+    ln -s "../../$(basename "$WAN_REPO_DIR")" "$WAN_WRAPPER_DIR"
+fi
+
+cd "$STUDIO_ROOT"
+# Sync parent index
+git add "$WAN_REPO_DIR"
+
+echo -e "✅ [SUCCESS] Wan 2.2 Wrapper is fully provisioned and linked.\n"
