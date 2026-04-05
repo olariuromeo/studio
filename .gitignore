@@ -5,32 +5,26 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: .gitignore
-# Description: Universal Shell Strategy for Apps & Data. 
-#              Scalable for infinite nested applications.
+# Description: Minimalist shell tracking. Everything else is VISIBLE.
 # ----------------------------------------------------------------------------------#
 
 # --- 🚀 UNIVERSAL APPS SHELL ---
-# 1. Ignore everything inside any subfolder of apps/
+# Ascundem tot ce e în interiorul aplicațiilor, dar păstrăm folderul aplicației.
 apps/*/**
-
-# 2. Allow the main directory for each app to be tracked (the pointer)
 !apps/*/
 
 # --- 💾 UNIVERSAL DATA SHELL ---
-# 1. Ignore everything inside the data/ folder
+# Ascundem tot ce e în data, dar păstrăm folderul data.
 data/**
-
-# 2. Keep only the data/ directory itself tracked
 !data/
 !data/.gitkeep
 
-# --- 🐍 ROOT CORE PROTECTIONS ---
-# Rules for the core/ and dev/ folders (outside of apps).
+# --- 🐍 PYTHON RUNTIME TRASH ---
+# Ascundem DOAR gunoiul generat de execuție, NU și configurările.
 **/__pycache__/
 **/*.py[cod]
 .env
 .env.*
-.python-version
 
 # --- 🖥️ OS & IDE SPECIFIC ---
 .DS_Store
