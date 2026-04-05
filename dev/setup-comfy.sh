@@ -6,7 +6,7 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: scripts/setup-comfy.sh
-# Description: Submodule-based ComfyUI Provisioning (Add/Clone + VENV + Torch).
+# Description: Submodule-based ComfyUI Provisioning (All in apps/ folder).
 # ----------------------------------------------------------------------------------#
 set -e
 
@@ -19,27 +19,33 @@ else
     exit 1
 fi
 
-# Fallback values if not defined in .env
+# --- 🛠️ FIX: Aliniem căile cu noua structură apps/ ---
+COMFY_RELATIVE_PATH="apps/ComfyUI"
+COMFY_DIR="$STUDIO_ROOT/$COMFY_RELATIVE_PATH"
+MANAGER_RELATIVE_PATH="apps/ComfyUI-Manager"
+MANAGER_SRC="$STUDIO_ROOT/$MANAGER_RELATIVE_PATH"
+MANAGER_TARGET="$COMFY_DIR/custom_nodes/ComfyUI-Manager"
+
+# Fallback values
 COMFY_TAG="${COMFY_TAG:-master}"
 COMFY_PYTHON_VERSION="${COMFY_PYTHON_VERSION:-3.11.9}"
 CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
-# Asigurăm că calea este corectă (ComfyUI la rădăcină)
-COMFY_DIR="${COMFY_DIR:-$STUDIO_ROOT/ComfyUI}"
 
-echo "⚙️  [COMFY] Initializing Backend Engine (Tag: $COMFY_TAG)..."
+echo "⚙️  [COMFY] Initializing Backend Engine in apps/ (Tag: $COMFY_TAG)..."
 
 # ----------------------------------------------------------------------------------#
 # 1. Repository Synchronization (Submodule Logic)
 # ----------------------------------------------------------------------------------#
 cd "$STUDIO_ROOT"
+
+# Verificăm/Adăugăm ComfyUI în apps/
 if [ ! -d "$COMFY_DIR/.git" ]; then
-    echo "   -> Adding ComfyUI as submodule..."
-    # Ștergem folderul dacă e orfan/fără .git pentru a putea face add
+    echo "   -> Adding ComfyUI as submodule to $COMFY_RELATIVE_PATH..."
     [ -d "$COMFY_DIR" ] && rm -rf "$COMFY_DIR"
-    git submodule add -f https://github.com/kabballa/ComfyUI.git ComfyUI
+    git submodule add -f https://github.com/kabballa/ComfyUI.git "$COMFY_RELATIVE_PATH"
 else
     echo "   -> Syncing existing ComfyUI submodule..."
-    git submodule update --init --recursive -- ComfyUI
+    git submodule update --init --recursive -- "$COMFY_RELATIVE_PATH"
 fi
 
 # Aliniere la versiune
@@ -50,11 +56,12 @@ git checkout "$COMFY_TAG" -f
 # ----------------------------------------------------------------------------------#
 # 2. Language & Environment Alignment (ASDF)
 # ----------------------------------------------------------------------------------#
-cd "$COMFY_DIR"
 echo "python $COMFY_PYTHON_VERSION" > .tool-versions
-. "$HOME/.asdf/asdf.sh"
-asdf install
-asdf reshim
+if [ -f "$HOME/.asdf/asdf.sh" ]; then
+    . "$HOME/.asdf/asdf.sh"
+    asdf install
+    asdf reshim
+fi
 
 # 3. Virtual Environment Setup
 echo "🧹 [COMFY] Creating fresh VENV (Python $COMFY_PYTHON_VERSION)..."
@@ -64,45 +71,38 @@ source venv/bin/activate
 pip install --upgrade pip
 
 # ----------------------------------------------------------------------------------#
-# 4. PyTorch JIT Installation (CUDA Driven)
+# 4. PyTorch JIT Installation (CUDA Optimized)
 # ----------------------------------------------------------------------------------#
 echo "📥 [COMFY] Forcing PyTorch 2.5.1 with CUDA URL Tag: $CUDA_TAG..."
-
-# Clean old versions
 pip uninstall torch torchvision torchaudio -y || true
-
-# Direct Install from WHL index
 pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
     --index-url "https://download.pytorch.org/whl/$CUDA_TAG" \
     --no-cache-dir
 
 # ----------------------------------------------------------------------------------#
-# 5. Core Requirements & Custom Nodes (Manager as LAST STEP)
+# 5. Core Requirements & Manager (LAST STEP)
 # ----------------------------------------------------------------------------------#
 echo "📥 [COMFY] Installing Official Requirements..."
 [ -f "requirements.txt" ] && pip install -r "requirements.txt"
 
-# --- Manager Installation (Submodule + Symlink) ---
-INTERNAL_MANAGER_DIR="apps/ComfyUI-Manager"
-MANAGER_TARGET="$COMFY_DIR/custom_nodes/ComfyUI-Manager"
-
+# --- Manager Installation ---
 echo "📦 [COMFY] Provisioning ComfyUI-Manager as submodule..."
 cd "$STUDIO_ROOT"
 
-if [ ! -d "$STUDIO_ROOT/$INTERNAL_MANAGER_DIR/.git" ]; then
-    echo "   -> Adding Manager submodule to $INTERNAL_MANAGER_DIR..."
-    [ -d "$STUDIO_ROOT/$INTERNAL_MANAGER_DIR" ] && rm -rf "$STUDIO_ROOT/$INTERNAL_MANAGER_DIR"
-    git submodule add -f https://github.com/kabballa/ComfyUI-Manager.git "$INTERNAL_MANAGER_DIR"
+if [ ! -d "$MANAGER_SRC/.git" ]; then
+    echo "   -> Adding Manager submodule to $MANAGER_RELATIVE_PATH..."
+    [ -d "$MANAGER_SRC" ] && rm -rf "$MANAGER_SRC"
+    git submodule add -f https://github.com/kabballa/ComfyUI-Manager.git "$MANAGER_RELATIVE_PATH"
 else
-    git submodule update --init --recursive -- "$INTERNAL_MANAGER_DIR"
+    git submodule update --init --recursive -- "$MANAGER_RELATIVE_PATH"
 fi
 
-# Crearea legăturii simbolice (Symlink) pentru ca motorul să vadă managerul
+# Crearea legăturii simbolice (Symlink)
+# Deoarece ambele sunt în apps/, link-ul relativ din custom_nodes este "../../ComfyUI-Manager"
 if [ ! -L "$MANAGER_TARGET" ]; then
     echo "🔗 [COMFY] Linking Manager into custom_nodes..."
     mkdir -p "$COMFY_DIR/custom_nodes"
-    # Folosim path relativ pentru portabilitate (din ComfyUI/custom_nodes/ în apps/)
-    ln -s "../../$INTERNAL_MANAGER_DIR" "$MANAGER_TARGET"
+    ln -s "../../ComfyUI-Manager" "$MANAGER_TARGET"
 fi
 
 # Instalare dependențe Manager
@@ -113,4 +113,4 @@ if [ -f "$MANAGER_TARGET/requirements.txt" ]; then
 fi
 
 deactivate
-echo "✅ [COMFY] Environment ready. Backend is fully provisioned as submodules."
+echo "✅ [COMFY] Environment ready. All apps are correctly mapped in apps/ folder."

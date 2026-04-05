@@ -15,3 +15,6 @@
 [submodule "ComfyUI"]
 	path = ComfyUI
 	url = https://github.com/kabballa/ComfyUI.git
+[submodule "apps/ComfyUI"]
+	path = apps/ComfyUI
+	url = https://github.com/kabballa/ComfyUI.git
