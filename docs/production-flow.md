@@ -81,7 +81,7 @@ Cinematic mood is driven by the relationship between sound and light. Coozila! S
 
 ## The Consensus-Based Scripting Engine: Human-AI Collaboration
 
-A professional production requires a structured hierarchy for narrative data. Coozila! Studio organizes work into a strictly defined tree: **Chapters $\rightarrow$ Scenes $\rightarrow$ Clips**. Clips are typically 2 to 5 seconds long to maintain temporal stability.
+A professional production requires a structured hierarchy for narrative data. Coozila! Studio organizes work into a strictly defined tree: **Chapters $\rightarrow$ Scenes $\rightarrow$ Clips**. Clips are typically 2 to 15 seconds long to maintain temporal stability.
 
 ### The Consensus Dialogue and UI Workflow
 The engine facilitates a bidirectional feedback loop. The AI proposes a technical script based on audio analysis; the human user reviews this in the **"Canvas UI,"** editing camera vectors or actions until the data is "locked" and the status transitions to **READY**.
