@@ -10,7 +10,7 @@
 #              Ensures consistent visual identity across the entire project.
 
 import logging
-from coozila.video.styles import STYLE_PRESETS
+from coozila.studio.video.styles import STYLE_PRESETS
 
 logger = logging.getLogger(__name__)
 

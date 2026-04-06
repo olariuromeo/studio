@@ -11,34 +11,30 @@
 # ----------------------------------------------------------------------------------#
 set -e
 
-# 0. Context Alignment
+# Context Alignment
 STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEBUI_DIR="$STUDIO_ROOT/apps/open-webui"
-CORE_SRC="$STUDIO_ROOT/core"
 
-echo -e "\n🛰️  [COOZILA DEPLOY] Synchronizing Distributed Root Namespace..."
-
-# ----------------------------------------------------------------------------------#
-# PHASE 1: ATOMIC MIRROR DEPLOYMENT
-# ----------------------------------------------------------------------------------#
-# Mirroring the 'coozila' namespace into the Open-WebUI environment.
-if [ -d "$CORE_SRC" ]; then
-    echo "   -> [MIRROR] Injecting Coozila Core into apps/open-webui..."
-    cp -rvu "$CORE_SRC/"* "$WEBUI_DIR/"
-else
-    echo "   ⚠️  [ERROR] Source folder 'core/' missing! Deployment aborted."
-    exit 1
-fi
+echo -e "\n🛰️  [COOZILA DEPLOY] Starting Atomic Mirroring..."
 
 # ----------------------------------------------------------------------------------#
-# PHASE 2: CUSTOM COMPOSE PATCHES
+# PHASE 1: EXPLICIT FOLDER COPY (The "Three Folders")
 # ----------------------------------------------------------------------------------#
-# Applying specific overlays (e.g., modified main.py or custom configs).
-COMPOSE_WEBUI="$STUDIO_ROOT/compose/open-webui"
-if [ -d "$COMPOSE_WEBUI" ]; then
-    echo "📂 [PHASE 2] Applying Custom Compose Overlays..."
-    cp -rvu "$COMPOSE_WEBUI/"* "$WEBUI_DIR/"
-fi
+
+# 1. Copy BACKEND (API logic)
+# Merges your custom backend code into the Open-WebUI backend.
+echo "   -> [MIRROR] Syncing: /backend"
+cp -rvu "$STUDIO_ROOT/backend/"* "$WEBUI_DIR/backend/"
+
+# 2. Copy COOZILA (The Engine Core: Audio/Studio/Video)
+# Places the Coozila engine inside the backend so it's importable.
+echo "   -> [MIRROR] Syncing: /coozila"
+cp -rvu "$STUDIO_ROOT/coozila" "$WEBUI_DIR/backend/"
+
+# 3. Copy SRC (Frontend: Canvas.svelte, UI Components)
+# Merges your Svelte components into the Open-WebUI source tree.
+echo "   -> [MIRROR] Syncing: /src"
+cp -rvu "$STUDIO_ROOT/src/"* "$WEBUI_DIR/src/"
 
 # ----------------------------------------------------------------------------------#
 # PHASE 3: DISTRIBUTED DEPENDENCY SYNCHRONIZATION

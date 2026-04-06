@@ -1491,9 +1491,9 @@ app.add_middleware(
 app.mount('/ws', socket_app)
 
 # ////////////////////////////////////////////////////////////
-# // START COD STUDIO - COOZILA ROUTER                      //
+# // START COD STUDIO - MOUNTING                            //
 # ////////////////////////////////////////////////////////////
-app.include_router(studio_router, prefix="/api/v1/coozila/studio", tags=["studio"])
+app.include_router(studio_router, prefix='/api/v1/studio', tags=['studio'])
 # ////////////////////////////////////////////////////////////
 # // END COD STUDIO                                         //
 # ////////////////////////////////////////////////////////////

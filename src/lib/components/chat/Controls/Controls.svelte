@@ -9,9 +9,13 @@
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Collapsible from '$lib/components/common/Collapsible.svelte';
 
-	// !!! START COD COOZILA STUDIO - IMPORT COMPONENTA !!!
-	import StudioCanvas from '$lib/studio/StudioCanvas.svelte';
-    // !!! END COD COOZILA STUDIO !!!
+	// ////////////////////////////////////////////////////////////
+    // // START COOZILA - CANVAS IMPORT                          //
+    // ////////////////////////////////////////////////////////////
+	import Canvas from '$lib/components/canvas/Canvas.svelte';
+    // ////////////////////////////////////////////////////////////
+    // // END COOZILA - CANVAS IMPORT                            //
+    // ////////////////////////////////////////////////////////////
 
 	import { user, settings } from '$lib/stores';
 	export let models = [];
@@ -31,9 +35,9 @@
 	let showFiles = getOpen('files');
 	let showValves = getOpen('valves', false);
 
-	// !!! START COD COOZILA STUDIO - STARE INITIALA (DESCHIS) !!!
-	let showCanvas = getOpen('canvas', true); 
-    // !!! END COD COOZILA STUDIO !!!
+	// !!! START COOZILA - CANVAS STATE !!!
+    let showCanvas = getOpen('canvas', true); 
+    // !!! END COOZILA - CANVAS STATE !!!
 
 	let showSystemPrompt = getOpen('systemPrompt');
 	let showAdvancedParams = getOpen('advancedParams');

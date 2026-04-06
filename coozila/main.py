@@ -1,12 +1,11 @@
 # ----------------------------------------------------------------------------------#
 #                                                                                   #
 #   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
-#   Coozila! Team    lab@coozila.com                                                #
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Location: coozila/main.py
-# Description: Main Entry Point for Coozila Studio. Mounts all service routers.
-#              Configured via .env / .env.dev for distributed environments.
+# Description: Main Entry Point for the Studio Engine. 
+#              Aggregates agnostic routers into a unified FastAPI service.
 # ----------------------------------------------------------------------------------#
 
 import time
@@ -29,13 +28,13 @@ setup_logging()
 logger = logging.getLogger("coozila.core")
 
 app = FastAPI(
-    title="Coozila! Studio API",
-    version="4.1-Production",
+    title="Studio API Engine",
+    version="4.1.0-OSS",
     debug=DEBUG_MODE
 )
 
 # --- 1. CORS MIDDLEWARE ---
-# Essential for frontend-backend communication (Svelte/React/Open WebUI)
+# Configures Cross-Origin Resource Sharing for distributed environments.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,16 +47,16 @@ app.add_middleware(
 @app.middleware("http")
 async def verify_internal_token(request: Request, call_next):
     """
-    Enforces the INTERNAL_TOKEN for all distributed node calls.
-    Ensures that only authorized nodes can access the studio namespace.
+    Enforces the INTERNAL_TOKEN for all distributed studio calls.
+    Protects the agnostic /api/v1/studio namespace.
     """
-    if request.url.path.startswith("/api/v1/coozila"):
+    if request.url.path.startswith("/api/v1/studio"):
         auth_header = request.headers.get("Authorization")
         if not auth_header or INTERNAL_TOKEN not in auth_header:
             logger.warning(f"Unauthorized access attempt from: {request.client.host}")
             return JSONResponse(
                 status_code=403, 
-                content={"detail": "Unauthorized: Invalid Coozila Internal Token"}
+                content={"detail": "Unauthorized: Invalid Internal Token"}
             )
     return await call_next(request)
 
@@ -65,7 +64,7 @@ async def verify_internal_token(request: Request, call_next):
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     """
-    Tracks API latency to monitor render and analysis performance.
+    Captures API latency for performance tracking of AI tasks.
     """
     start_time = time.time()
     response = await call_next(request)
@@ -73,28 +72,28 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
-# --- 4. MOUNT HIERARCHICAL ROUTERS ---
-# studio_router already contains /video and /audio sub-routers via coozila.studio.api
+# --- 4. MOUNT AGNOSTIC ROUTERS ---
+# studio_router includes sub-modules for /video and /audio hierarchies.
 app.include_router(studio_router)
 
-# --- 5. CORE ENDPOINTS ---
+# --- 5. SYSTEM ENDPOINTS ---
 
-@app.get("/", tags=["System"])
+@app.get("/")
 async def root():
     """
-    Base landing for the Coozila API.
+    Root endpoint for service identification.
     """
     return {
         "status": "online",
-        "engine": "Coozila! Studio Server",
-        "version": "4.1",
+        "engine": "Studio API Engine",
+        "version": "4.1.0-OSS",
         "timestamp": time.time()
     }
 
 @app.get("/health", tags=["System"])
 async def global_health():
     """
-    Global health check for infrastructure monitoring systems.
+    Health check endpoint for infrastructure monitoring.
     """
     return {
         "status": "healthy",
@@ -102,23 +101,20 @@ async def global_health():
             "studio": "active",
             "video_engine": "initialized",
             "audio_engine": "initialized"
-        },
-        "debug_mode": DEBUG_MODE
+        }
     }
 
-# --- 🚀 EXECUTION BLOCK ---
+# --- EXECUTION BLOCK ---
 if __name__ == "__main__":
     import uvicorn
-    import os
     from urllib.parse import urlparse
 
-    # Extract Host and Port from STUDIO_URL defined in .env
-    # Example: http://127.0.0.1:8000 -> host="127.0.0.1", port=8000
+    # Extract Host and Port from environment-defined STUDIO_URL.
     parsed_url = urlparse(STUDIO_URL)
     host = parsed_url.hostname or "0.0.0.0"
     port = parsed_url.port or 8000
 
-    logger.info(f"Starting Coozila Engine on {host}:{port} (Debug: {DEBUG_MODE})")
+    logger.info(f"Starting Engine on {host}:{port} (Debug: {DEBUG_MODE})")
     
     uvicorn.run(
         "coozila.main:app", 
