@@ -29,7 +29,7 @@ cp -rvu "$STUDIO_ROOT/backend/"* "$WEBUI_DIR/backend/"
 # 2. Copy COOZILA (The Engine Core: Audio/Studio/Video)
 # Places the Coozila engine inside the backend so it's importable.
 echo "   -> [MIRROR] Syncing: /coozila"
-cp -rvu "$STUDIO_ROOT/coozila" "$WEBUI_DIR/backend/"
+cp -rvu "$STUDIO_ROOT/coozila" "$WEBUI_DIR/"
 
 # 3. Copy SRC (Frontend: Canvas.svelte, UI Components)
 # Merges your Svelte components into the Open-WebUI source tree.

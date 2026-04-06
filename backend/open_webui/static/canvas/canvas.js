@@ -1,13 +1,6 @@
-// ----------------------------------------------------------------------------------#
-//                                                                                   //
-//   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              //
-//   Coozila! Team    lab@coozila.com                                                //
-//                                                                                   //
-// ----------------------------------------------------------------------------------#
-
 /**
  * @class StudioCanvas
- * @description Core JS Engine for the Coozila Canvas. 
+ * @description Core JS Engine for the Coozila! Canvas. 
  * Location: static/canvas/canvas.js
  * Handles DOM construction inside Svelte, API communication, and timeline rendering.
  */
