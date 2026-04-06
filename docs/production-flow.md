@@ -1,96 +1,88 @@
-# 🎬 Coozila! Studio v4.2
-### **The Open-Source AI Cinematic Orchestrator**
+# Coozila! Studio v4.2: Technical Production Architecture
 
-Coozila! Studio is a professional-grade video production pipeline that bridges the gap between raw Generative AI power and traditional filmmaking workflows. It transforms a simple audio-visual input into a structured, high-fidelity cinematic sequence using a **Consensus-based Scripting Engine** and a **64-bit Aligned Rendering Matrix**.
+Coozila! Studio is a professional-grade AI video orchestration suite designed to bridge the gap between generative neural models and traditional cinematic workflows. By implementing a **Scripting Consensus Engine** and a **64-bit Aligned Rendering Matrix**, it ensures narrative consistency and maximum hardware efficiency for high-end film production.
 
----
+## 1. Standardized Resolution Matrix (64-pixel Alignment)
 
-## 🚀 The Core Philosophy: Precision Over Chaos
-Unlike standard "text-to-video" tools that produce random results, Coozila! Studio treats AI as a **Technical Director**. Every frame is governed by mathematical constraints to ensure GPU efficiency and narrative consistency.
+To maximize **Tensor Core** efficiency and prevent sampling artifacts during the **Wan 2.2** and **RIFE** phases, the system enforces strict 64-pixel alignment. Dimensions not divisible by 64 are rejected by the orchestrator to ensure VRAM stability.
 
----
+### Block A: Landscape (16:9 / Cinematic)
+*Optimized for YouTube, Feature Film, and Ultra-Wide displays.*
 
-## 1. 📐 The "Holy 64" Resolution Matrix
-To maximize **Tensor Core** efficiency and eliminate AI padding artifacts, the Coozila! Orchestrator enforces strict 64-pixel alignment. Dimensions not divisible by 64 are strictly prohibited to ensure stability during the Wan 2.2 and Upscaling phases.
-
-### **📽️ Block A: Landscape (Cinematic & Epic)**
-*Optimized for YouTube, Film, and Ultra-Wide displays.*
-
-| Profile | Exact Resolution (W x H) | Aspect Ratio | 64n Divisibility | Role |
+| Profile | Exact Resolution (W x H) | Aspect Ratio | 64n Divisibility | Technical Role |
 | :--- | :--- | :--- | :--- | :--- |
-| **PREVIEW** | **896 x 512** | 1.75:1 | $14 \times 8$ | Native Wan 2.2 / OTIO Draft |
-| **HD READY** | **1280 x 704** | 1.81:1 | $20 \times 11$ | High-Quality Draft / QC Review |
+| **PREVIEW** | **896 x 512** | 1.75:1 | $14 \times 8$ | Native Wan 2.2 Inference / OTIO Draft |
+| **HD READY** | **1280 x 704** | 1.81:1 | $20 \times 11$ | High-Quality QC Draft / Review |
 | **FULL HD** | **1920 x 1088** | 1.76:1 | $30 \times 17$ | Broadcast Master (1080p AI-Aligned) |
 | **MASTER 4K**| **4096 x 2304** | 1.77:1 | $64 \times 36$ | Cinematic DCI 4K Production |
-| **ULTRA 8K** | **8192 x 4608** | 1.77:1 | $128 \times 72$ | Archival / Future-Proof 8K Master |
+| **ULTRA 8K** | **8192 x 4608** | 1.77:1 | $128 \times 72$ | Archival / Deep-Detail 8K Master |
 
-### **📱 Block B: Portrait (Mobile & Social Media)**
+### Block B: Portrait (9:16 / Mobile & Social)
 *Optimized for TikTok, Reels, and Vertical content.*
 
-| Profile | Exact Resolution (W x H) | Aspect Ratio | 64n Divisibility | Role |
+| Profile | Exact Resolution (W x H) | Aspect Ratio | 64n Divisibility | Technical Role |
 | :--- | :--- | :--- | :--- | :--- |
-| **PREVIEW** | **512 x 896** | 0.57:1 | $8 \times 14$ | Vertical Native Draft |
+| **PREVIEW** | **512 x 896** | 0.57:1 | $8 \times 14$ | Vertical Native Draft / Motion Test |
 | **HD READY** | **704 x 1280** | 0.55:1 | $11 \times 20$ | Vertical QC / Mobile Review |
 | **FULL HD** | **1088 x 1920** | 0.56:1 | $17 \times 30$ | Social Media Master (1080p Vertical) |
 | **MASTER 4K**| **2304 x 4096** | 0.56:1 | $36 \times 64$ | Vertical 4K Cinematic Production |
 
-### **🟦 Block C: Square (Art & Interfaces)**
-*Optimized for Instagram Feeds, Cover Art, and UI.*
+### Block C: Square (1:1 / UI & Art)
+*Optimized for Instagram Feeds, Album Art, and UI design.*
 
-| Profile | Exact Resolution (W x H) | Aspect Ratio | 64n Divisibility | Role |
+| Profile | Exact Resolution (W x H) | Aspect Ratio | 64n Divisibility | Technical Role |
 | :--- | :--- | :--- | :--- | :--- |
 | **PREVIEW** | **512 x 512** | 1:1 | $8 \times 8$ | Fast Iteration / Storyboarding |
-| **STANDARD** | **1024 x 1024** | 1:1 | $16 \times 16$ | High-Res Square / Album Art |
+| **STANDARD** | **1024 x 1024** | 1:1 | $16 \times 16$ | High-Resolution Square / Cover Art |
 | **MASTER 4K**| **4096 x 4096** | 1:1 | $64 \times 64$ | Tiled Square Mastering / Print-Ready |
 
 ---
 
-## 2. 🎭 Character Casting & Spectral Analysis
-Before the first watt is consumed by the GPU, the system builds the **Production Bible**:
+## 2. Character Casting & Spectral Analysis
 
-* **Character Anchors:** Uploaded reference images are processed via Vision-to-Prompt modules to generate dense semantic descriptions. This "Anchor" is injected into every subsequent prompt to ensure character consistency (e.g., specific armor details, scars, or eye color) across the entire timeline.
-* **Audio Pulse Analysis:** Using `librosa`, the system identifies:
-    * **BPM & Onset Peaks:** Scene transitions are mathematically snapped to the rhythmic "kick" of the audio.
-    * **Spectral Centroid:** Visual saturation and lighting moods are automatically adjusted to match the audio's brightness.
+Before rendering begins, the system generates the **Production Bible** to ensure long-term visual coherence:
 
----
-
-## 3. 🤝 Scripting Consensus & Prompt Relay
-The core of the studio is a bidirectional feedback loop between the Human and the AI Director.
-
-1.  **Timeline Hierarchy:** Production is strictly organized into **Chapters ➔ Scenes ➔ Clips** (2-5 second units).
-2.  **The Consensus Dialogue:** The AI proposes a technical script based on the audio mood. The user reviews, edits, and locks the data in the Canvas UI until the status transitions to `READY`.
-3.  **Prompt Relay:** Each clip carries a dual-instruction set:
-    * **Visual Prompt:** Detailed action based on the Character Anchor.
-    * **Motion Prompt:** Camera vectors (e.g., *Dolly In, Pan Left, Tilt Up, Crane Shot, Zoom Burst*).
-4.  **Seed Persistence:** The system maintains seed continuity between adjacent clips in the same scene to prevent visual "flicker."
+* **Character Anchors:** Reference images are processed via Vision-to-Prompt modules to generate dense semantic descriptors. This anchor is injected into every clip prompt to maintain fidelity of specific features (armor, facial scars, eye color) across the entire sequence.
+* **Audio Pulse Analysis (`librosa` & `whisperx`):** Identifies BPM and onset peaks for rhythmic editing. Spectral analysis automatically adjusts visual lighting and saturation parameters based on the audio's emotional and frequency profile.
 
 ---
 
-## 4. 🚀 The Rendering Lab (Multi-Phase Pipeline)
+## 3. Scripting Consensus & Prompt Relay
 
-### **Phase A: Storyboard Sketch**
-Generates static thumbnails for every clip. This allows for composition and lighting verification before committing significant VRAM to video generation.
+The orchestrator operates as a **Technical Director**, enforcing a bidirectional feedback loop between the user and the AI.
 
-### **Phase B: Motion Preview (Draft)**
+1.  **Timeline Hierarchy:** Production is organized into **Chapters ➔ Scenes ➔ Clips** (atomic 2-5 second units).
+2.  **The Consensus Dialogue:** The AI proposes a technical script based on audio analysis. The user reviews and edits clip descriptions within the Canvas UI until the status transitions to `READY`.
+3.  **Prompt Relay Engine:** Each clip utilizes a dual-instruction set:
+    * **Visual Prompt:** Action description derived from the Character Anchor.
+    * **Motion Prompt:** Camera vectors including Dolly In, Pan Left, Tilt Up, Crane Shot, and Zoom Burst.
+4.  **Seed Persistence:** Maintains seed continuity between adjacent clips in the same scene to eliminate visual "flickering" or character drifting.
+
+---
+
+## 4. Multi-Phase Execution Pipeline
+
+### Phase A: Storyboard Sketch
+Generates static thumbnails for every clip on the timeline. This allows for composition and lighting verification before committing significant VRAM resources to video generation.
+
+### Phase B: Motion Preview (Draft)
 * **Resolution:** PREVIEW (896x512).
-* **Technique:** 16 FPS using **Distill LoRA** (8-10 sampling steps).
-* **Goal:** Instant validation of motion flow and rhythmic synchronization.
+* **Methodology:** 16 FPS using **Distill LoRA** (8-10 sampling steps).
+* **Objective:** Immediate validation of motion flow and rhythmic synchronization with the audio track.
 
-### **Phase C: Master Generation & Sequential Finishing**
-1.  **High-Fidelity Render:** 30-40 sampling steps, LoRA disabled, leveraging the full texture depth of Wan 2.2.
-2.  **Temporal Interpolation (RIFE):** Frames are scaled from 16 FPS ➔ 32 FPS ➔ **64 FPS** for "Buttery Smooth" cinematic motion.
-3.  **Spatial Tiled Upscaling:** To reach 4K/8K resolutions on 10-12GB GPUs, the system utilizes 64-pixel aligned tile processing, assembling the final master frame-by-frame.
-
----
-
-## 5. 📦 Final Mastering & Professional Export
-* **FFmpeg Integration:** Muxing high-bitrate video (AV1/H.265 at 200Mbps+) with the original high-fidelity audio track.
-* **OTIO Standard:** Exporting an **OpenTimelineIO** file, allowing the entire AI-generated timeline to be imported directly into **DaVinci Resolve** or **Adobe Premiere** for professional color grading and final touches.
+### Phase C: Master Generation & Sequential Finishing
+1.  **High-Fidelity Render:** 30-40 sampling steps, LoRA disabled, leveraging the full texture depth of the Wan 2.2 model.
+2.  **Temporal Interpolation (RIFE):** Frames are scaled from 16 FPS to 32 FPS, then to **64 FPS** for fluid cinematic motion.
+3.  **Spatial Tiled Upscaling:** To achieve 4K/8K resolutions on consumer-grade GPUs, the system utilizes 64-pixel aligned tile processing, assembling the final master frame-by-frame without memory overflows.
 
 ---
 
-### **License & Contributions**
-Coozila! Studio is licensed under the **MIT License**. We welcome contributions from developers, AI researchers, and filmmakers. 
+## 5. Mastering & Professional Export
 
-**Join the revolution. Build the future of cinema.** 🪓🚀🎬
+* **FFmpeg Integration:** Final muxing of processed video (AV1 or H.265 at 200Mbps+) with the original high-fidelity audio.
+* **OTIO Standard:** Exporting an **OpenTimelineIO** file, allowing the entire AI-generated project to be imported directly into industry-standard NLEs like **DaVinci Resolve** or **Adobe Premiere Pro**.
+
+---
+
+### License
+Coozila! Studio is licensed under the **MIT License**. Copyright (C) 2009 - 2026 Coozila! Team.
