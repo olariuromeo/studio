@@ -1,7 +1,5 @@
 <script>
-	// !!! START COD STUDIO - COOZILA !!!
-	import '$lib/studio/canvas.js'; 
-	// !!! END COD STUDIO !!!
+	import '$lib/components/canvas/canvas.js'; 
 	import { io } from 'socket.io-client';
 	import { spring } from 'svelte/motion';
 	import PyodideWorker from '$lib/workers/pyodide.worker?worker';

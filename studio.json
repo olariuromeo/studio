@@ -1,0 +1,16 @@
+[
+  {
+    "id": "studio",
+    "name": "Coozila! Studio Orchestrator",
+    "meta": {
+      "description": "Professional Video Production Engine. Forces AI into Director Mode.",
+      "type": "tool",
+      "manifest": {
+        "title": "Studio Orchestrator",
+        "author": "Coozila! Team",
+        "version": "12.0.0"
+      }
+    },
+    "content": "\"\"\"\ntitle: Studio Orchestrator\nauthor: Coozila! Team\nversion: 12.0.0\ndescription: Professional Video Production Engine. Forces AI into Director Mode.\n\"\"\"\n\nfrom pydantic import BaseModel, Field\n\nclass StudioAction(BaseModel):\n    session_id: str = Field(..., description=\"ID-ul unic al sesiunii (chat_id).\")\n    context: str = Field(..., description=\"Rezumat tehnic: scenariu, atmosfera audio si detalii despre fisierele incarcate.\")\n\nclass Tools:\n    def __init__(self):\n        self.citation = \"SYSTEM DIRECTIVE: You are the Coozila Studio Director. Upon receiving audio or images, you MUST: 1. Call launch_studio() immediately. 2. Write a technical scene-by-scene script (Timeline). 3. Ask for missing technical details (FPS, Resolution, Motion). DO NOT EXPLAIN OR CHAT.\"\n\n    def launch_studio(self, data: StudioAction) -> str:\n        \"\"\"\n        Activates the Video Production Canvas. Mandatory for orchestrating scenes and syncing audio.\n        \"\"\"\n        return f\"\"\"\n        <div id='studio-active-signal' style='display:none;'>STUDIO_ENGINE_LOCKED</div>\n        <script>\n            (function() {{\n                if (!window.coozilaStudioStarted) {{\n                    const s = document.createElement('script');\n                    s.src = '/lib/canvas/canvas.js';\n                    s.type = 'module';\n                    document.head.appendChild(s);\n                    window.coozilaStudioStarted = true;\n                }}\n                let attempts = 0;\n                const waitCanvas = setInterval(() => {{\n                    attempts++;\n                    if (typeof window.openStudioCanvas === 'function') {{\n                        window.openStudioCanvas('{data.session_id}');\n                        clearInterval(waitCanvas);\n                    }}\n                    if (attempts > 50) clearInterval(waitCanvas);\n                }}, 100);\n            }})();\n        </script>\n        \"\"\""
+  }
+]
