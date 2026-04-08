@@ -109,8 +109,8 @@ smart_sync "$BASE_COMFY/vae/wan_2.1_vae.safetensors" \
 smart_sync "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" \
            "$MODELS_DIR/clip/clip_l.safetensors"
 
-# 4. Audio Encoder (Wav2Vec2)
-smart_sync "$BASE_COMFY/audio_encoders/wav2vec2_large_english_fp16.safetensors" \
+# 4. Audio Encoder (Wav2Vec2 - tras din repo-ul Wan 2.2 Repackaged)
+smart_sync "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors" \
            "$MODELS_DIR/audio_encoders/wav2vec2_large_english_fp16.safetensors"
 
 # 5. Diffusion Model (Wan 2.2 S2V 14B FP8 from Kijai)
