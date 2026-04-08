@@ -105,17 +105,20 @@ run_step "./dev/setup-studio.sh" "Studio Integration"
 # 4. Setup ComfyUI Independent Engine
 run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"
 
-# 3. Install OTIO Engine (Timeline Backbone)
-run_step "./dev/setup-otio.sh" "OTIO Engine"
+# 3. Install Wan 2.2 Engine (Optimized Wrapper + Dependencies)
+run_step "./dev/setup-wan2.sh" "Wan 2.2 Engine"
 
 # 5. Setup Wan 2.2 Model Sync (Auto-Path & Zero-Byte Guard)
 run_step "./dev/download-models.sh" "Wan 2.2 Model Sync"
 
+# 3. Install OTIO Engine (Timeline Backbone)
+#run_step "./dev/setup-otio.sh" "OTIO Engine"
+
 # 5. Setup mcp-proxy server for distributed stack
-run_step "./dev/mcp-proxy.sh" "Terminal Stack"
+#run_step "./dev/mcp-proxy.sh" "Terminal Stack"
 
 # 5. Setup Terminal Stack (mcp-proxy, MinIO, Postgres)
-run_step "./dev/setup-terminal.sh" "Terminal Stack"
+#run_step "./dev/setup-terminal.sh" "Terminal Stack"
 
 # ----------------------------------------------------------------------------------#
 # PHASE 2: FRONTEND ENGINE (Vite / SvelteKit)

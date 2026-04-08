@@ -98,28 +98,30 @@ smart_sync() {
 BASE_COMFY_21="https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files"
 BASE_COMFY_22="https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files"
 
-# 1. Text Encoder (UMT5 - Stabil din 2.1)
+# --- 4. ASSET LIST (Coozila! Exact Byte Verification) ---
+
+# 1. Text Encoder (UMT5) - Exact: 6.735.906.897 bytes
 smart_sync "$BASE_COMFY_21/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" \
-           "$MODELS_DIR/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+           "$MODELS_DIR/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" 6735906897
 
-# 2. VAE (Același VAE universal pentru 2.1 și 2.2)
+# 2. VAE - Exact: 1.141.724.332 bytes
 smart_sync "$BASE_COMFY_21/vae/wan_2.1_vae.safetensors" \
-           "$MODELS_DIR/vae/wan_2.1_vae.safetensors"
+           "$MODELS_DIR/vae/wan_2.1_vae.safetensors" 1141724332
 
-# 3. CLIP (Model universal Flux/Wan)
+# 3. CLIP (Flux/Wan) - Exact: 246.513.732 bytes
 smart_sync "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" \
-           "$MODELS_DIR/clip/clip_l.safetensors"
+           "$MODELS_DIR/clip/clip_l.safetensors" 246513732
 
-# 4. Audio Encoder (Specific Wan 2.2)
+# 4. Audio Encoder (Wav2Vec2) - Exact: 631.114.770 bytes
 smart_sync "$BASE_COMFY_22/audio_encoders/wav2vec2_large_english_fp16.safetensors" \
-           "$MODELS_DIR/audio_encoders/wav2vec2_large_english_fp16.safetensors"
+           "$MODELS_DIR/audio_encoders/wav2vec2_large_english_fp16.safetensors" 631114770
 
-# 5. Diffusion Model (Wan 2.2 S2V 14B FP8 Scaled - THE BEAST)
+# 5. Diffusion Model (The Beast) - Exact: 16.653.330.620 bytes
 smart_sync "$BASE_COMFY_22/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors" \
-           "$MODELS_DIR/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors"
+           "$MODELS_DIR/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors" 16653330620
 
-# 6. LoRA (Wan 2.2 T2V Lightx2V - 4 Steps Turbo)
+# 6. LoRA (Lightx2V) - Exact: 153.253.116 bytes
 smart_sync "$BASE_COMFY_22/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" \
-           "$MODELS_DIR/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors"
+           "$MODELS_DIR/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" 153253116
 
 echo -e "\n🚀 \033[1;32m[COMPLETE] Coozila! Studio is armed with Wan 2.2 and ready for action.\033[0m\n"

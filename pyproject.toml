@@ -23,14 +23,6 @@ dependencies = [
     "numpy"
 ]
 
-[tool.setuptools]
-# Definirea ierarhiei complete: Namespace (coozila) -> Pachet (studio) -> Sub-pachete (video, etc.)
-packages = [
-    "coozila",
-    "coozila.studio",
-    "coozila.studio.video"
-]
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["coozila*"]

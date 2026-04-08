@@ -21,7 +21,9 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 echo "🚀 [WAN 2.2] Loading environment from $(basename "$ENV_FILE")..."
-export $(grep -v '^#' "$ENV_FILE" | xargs)
+set -a
+source <(sed 's/#.*//g; /^[[:space:]]*$/d' "$ENV_FILE")
+set +a
 
 # Ensure mandatory paths are derived from ENV
 WAN_WRAPPER_DIR="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/ComfyUI-WanVideoWrapper"

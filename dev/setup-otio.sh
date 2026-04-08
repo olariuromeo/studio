@@ -14,7 +14,9 @@ STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Load Environment
 if [ -f "$STUDIO_ROOT/.env.dev" ]; then
-    export $(grep -v '^#' "$STUDIO_ROOT/.env.dev" | xargs)
+    set -a
+    source <(sed 's/#.*//g; /^[[:space:]]*$/d' "$STUDIO_ROOT/.env.dev")
+    set +a
 else
     echo "❌ [ERROR] .env.dev missing."
     exit 1
@@ -38,6 +40,6 @@ git submodule update --init --recursive -- "$OTIO_DIR" "$VIEWER_DIR"
 
 # 2. Launch Stack
 echo "🚀 [STACK] Launching OTIO Engine & Viewer Services..."
-docker compose -f "$STUDIO_ROOT/dev/otio.yaml" --env-file "$STUDIO_ROOT/dev/.env.dev" up -d --build
+docker compose -f "$STUDIO_ROOT/dev/otio.yaml" --env-file "$STUDIO_ROOT/.env.dev" up -d --build
 
 echo -e "\n✅ [SUCCESS] OTIO Suite is live in Docker."
