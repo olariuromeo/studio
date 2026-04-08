@@ -82,9 +82,10 @@ if [ -f "$HOME/.asdf/asdf.sh" ]; then
 fi
 
 # ----------------------------------------------------------------------------------#
-# 3. VENV
+# 3. SELF-CLEANING VENV (Modular Update Logic)
 # ----------------------------------------------------------------------------------#
-echo "🧹 Creating venv..."
+# We perform the cleanup here to allow standalone updates without wiping the entire studio.
+echo "🧹 [CLEANUP] Wiping existing ComfyUI VENV for a fresh start..."
 
 [ -d "venv" ] && rm -rf venv
 
@@ -93,6 +94,7 @@ if ! command -v $PYTHON_BIN &> /dev/null; then
     PYTHON_BIN="python"
 fi
 
+echo "📦 Creating new virtual environment..."
 $PYTHON_BIN -m venv venv
 source venv/bin/activate
 
