@@ -13,8 +13,8 @@ set -e
 STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Load Environment
-if [ -f "$STUDIO_ROOT/dev/.env.dev" ]; then
-    export $(grep -v '^#' "$STUDIO_ROOT/dev/.env.dev" | xargs)
+if [ -f "$STUDIO_ROOT/.env.dev" ]; then
+    export $(grep -v '^#' "$STUDIO_ROOT/.env.dev" | xargs)
 else
     echo "❌ [ERROR] .env.dev missing."
     exit 1

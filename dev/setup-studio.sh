@@ -6,69 +6,76 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: scripts/setup-studio.sh
-# Description: Distributed Namespace Orchestrator. Synchronizes multiple 
-#              microservices (Audio, Studio, Video) and their dependencies.
+# Description: v4.2 Distributed Namespace Orchestrator. 
+#              Synchronizes Audio, Studio, and Video stacks using Root VENV.
 # ----------------------------------------------------------------------------------#
 set -e
 
-# Context Alignment
+# 0. Context & Environment Loading
+# Determine project root and Open-WebUI location
 STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEBUI_DIR="$STUDIO_ROOT/apps/open-webui"
 
-echo -e "\n🛰️  [COOZILA DEPLOY] Starting Atomic Mirroring..."
+echo -e "\n⚙️  [STEP 0] Loading Coozila! Environment..."
 
-# ----------------------------------------------------------------------------------#
-# PHASE 1: EXPLICIT FOLDER COPY (The "Three Folders")
-# ----------------------------------------------------------------------------------#
+# FIX: Robust Export Logic
+# Removes inline comments and empty lines to prevent "not a valid identifier" errors.
+if [ -f "$STUDIO_ROOT/.env.dev" ]; then
+    export $(sed 's/#.*//g; /^[[:space:]]*$/d' "$STUDIO_ROOT/.env.dev" | xargs)
+else
+    export $(sed 's/#.*//g; /^[[:space:]]*$/d' "$STUDIO_ROOT/.env" | xargs)
+fi
 
-# 1. Copy BACKEND (API logic)
-# Merges your custom backend code into the Open-WebUI backend.
-echo "   -> [MIRROR] Syncing: /backend"
+echo -e "🚀 [PHASE 1] Starting Atomic Mirroring (Overlays)..."
+
+# 1. Mirroring Logic
+# Merges Studio custom logic into the Open-WebUI structure.
+# Using -u (update) to sync only new or modified files.
+echo "   -> [MIRROR] Injecting Backend Logic..."
 cp -rvu "$STUDIO_ROOT/backend/"* "$WEBUI_DIR/backend/"
 
-# 3. Copy SRC (Frontend: Canvas.svelte, UI Components)
-# Merges your Svelte components into the Open-WebUI source tree.
-echo "   -> [MIRROR] Syncing: /src"
+echo "   -> [MIRROR] Injecting Frontend Components (Canvas/Svelte)..."
 cp -rvu "$STUDIO_ROOT/src/"* "$WEBUI_DIR/src/"
 
 # ----------------------------------------------------------------------------------#
 # PHASE 3: DISTRIBUTED DEPENDENCY SYNCHRONIZATION
 # ----------------------------------------------------------------------------------#
-echo "🐍 [PHASE 3] Synchronizing Python Micro-Stacks..."
+echo -e "\n🐍 [PHASE 3] Synchronizing Python Micro-Stacks (VENV: Root)..."
 
-# Locate the Virtual Environment (VENV)
-W_VENV=""
-[ -d "$WEBUI_DIR/backend/venv" ] && W_VENV="$WEBUI_DIR/backend/venv"
-[ -d "$WEBUI_DIR/venv" ] && W_VENV="$WEBUI_DIR/venv"
+# Define the Virtual Environment path in the Open-WebUI root
+W_VENV="$WEBUI_DIR/venv"
 
-if [ -n "$W_VENV" ]; then
-    source "$W_VENV/bin/activate"
-    echo "   -> [VENV] Active: $W_VENV"
+if [ -d "$W_VENV" ]; then
+    # Use the absolute path to the PIP executable for stability
+    PIP_EXEC="$W_VENV/bin/pip"
+    
+    echo "   -> [VENV] Active Environment: $W_VENV"
 
-    # --- 🎵 AUDIO STACK ---
+    # --- 🎵 AUDIO STACK (Coozila! Audio Node) ---
     AUDIO_REQ="$WEBUI_DIR/backend/coozila/audio/requirements.txt"
     if [ -f "$AUDIO_REQ" ]; then
-        echo "   -> [SYNC] Installing Audio Node dependencies (Librosa, Numpy)..."
-        pip install -r "$AUDIO_REQ" --no-cache-dir
+        echo "   -> [SYNC] Installing Audio dependencies (Librosa, Numpy)..."
+        $PIP_EXEC install -r "$AUDIO_REQ" --no-cache-dir
     fi
 
-    # --- 🎬 STUDIO/ORCHESTRATOR STACK ---
+    # --- 🎬 STUDIO/ORCHESTRATOR STACK (Coozila! Studio Node) ---
     STUDIO_REQ="$WEBUI_DIR/backend/coozila/studio/requirements.txt"
     if [ -f "$STUDIO_REQ" ]; then
-        echo "   -> [SYNC] Installing Studio Orchestrator dependencies (OTIO, FFmpeg)..."
-        pip install -r "$STUDIO_REQ" --no-cache-dir
+        echo "   -> [SYNC] Installing Studio dependencies (OTIO, FFmpeg)..."
+        $PIP_EXEC install -r "$STUDIO_REQ" --no-cache-dir
     fi
 
-    # --- 🎨 VIDEO/UPSCALER STACK ---
+    # --- 🎨 VIDEO/UPSCALER STACK (Coozila! Video Node) ---
     VIDEO_REQ="$WEBUI_DIR/backend/coozila/video/requirements.txt"
     if [ -f "$VIDEO_REQ" ]; then
-        echo "   -> [SYNC] Installing Video/Upscaler dependencies (Multipart, HTTPX)..."
-        pip install -r "$VIDEO_REQ" --no-cache-dir
+        echo "   -> [SYNC] Installing Video/Render dependencies (HTTPX, Pydantic)..."
+        $PIP_EXEC install -r "$VIDEO_REQ" --no-cache-dir
     fi
 
-    deactivate
 else
-    echo "   ⚠️  [WARNING] No Virtual Environment found in $WEBUI_DIR. Please install manually."
+    echo -e "❌ [ERROR] Critical: Python VENV not found at $W_VENV."
+    echo "   Please ensure setup-webui.sh has created the environment."
+    exit 1
 fi
 
-echo -e "✅ [STUDIO SETUP] Distributed microservice sync complete.\n"
+echo -e "\n✅ [STUDIO SETUP] All distributed micro-services are synchronized."

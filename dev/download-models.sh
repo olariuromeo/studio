@@ -1,80 +1,124 @@
 #!/bin/bash
 # ----------------------------------------------------------------------------------#
-#   Coozila! Studio - UNIVERSAL DOWNLOADER (Auto-Path & Zero-Byte Guard)           #
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                                #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# Document: dev/download-models.sh
+# Description: Container-native Provisioning for ComfyUI Engine (ComfyUI v1.0+)
 # ----------------------------------------------------------------------------------#
 
-# 1. DETECTARE AUTOMATĂ CĂI (Află unde e rula scriptul)
+# Halt execution on critical errors
+set -e
+
+# 1. AUTO-PATH DETECTION
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STUDIO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMFY_DIR="$STUDIO_ROOT/apps/ComfyUI"
-MODELS_DIR="$COMFY_DIR/models"
-DOT_ENV="$STUDIO_ROOT/.env"
+MODELS_DIR="$STUDIO_ROOT/apps/ComfyUI/models"
+DOT_ENV="$STUDIO_ROOT/.env.dev"
 
-echo "📂 Director Proiect detectat: $STUDIO_ROOT"
-echo "📂 Director Modele detectat: $MODELS_DIR"
+echo -e "\n📂 \033[1;34mProject Root:\033[0m $STUDIO_ROOT"
+echo -e "📂 \033[1;34mModels Path:\033[0m $MODELS_DIR"
 
-# 2. Încărcare Token din .env (dacă există)
+# 2. LOAD ENVIRONMENT (SAFE GREP)
+HF_TOKEN=""
 if [ -f "$DOT_ENV" ]; then
-    HF_TOKEN=$(grep '^HF_TOKEN=' "$DOT_ENV" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
-    echo "🔑 Token HF încărcat din .env"
+    # Using '|| true' to prevent script failure (due to 'set -e') if the token is missing
+    HF_TOKEN=$(grep '^HF_TOKEN=' "$DOT_ENV" | cut -d'=' -f2- | tr -d '"' | tr -d "'" || true)
+    if [ -n "$HF_TOKEN" ]; then
+        echo -e "🔑 \033[32mHF_TOKEN loaded from .env.dev\033[0m"
+    else
+        echo -e "⚠️ \033[33mHF_TOKEN not found in .env.dev. Downloading public models only.\033[0m"
+    fi
 fi
 
-# 3. AUTO-INSTALL ARIA2 (Dacă lipsește și avem permisiuni)
-if ! command -v aria2c &> /dev/null; then
-    echo "📦 Aria2c lipsește. Încercăm instalarea automată..."
-    sudo apt-get update -qq && sudo apt-get install -y aria2 -qq || echo "⚠️ Nu s-a putut instala aria2, folosim wget."
-fi
-
-# 4. FUNCȚIA DE DOWNLOAD (Verifică 0 biți -> Șterge -> Descarcă Turbo)
+# 3. SMART SYNC ENGINE
 smart_sync() {
-    local url=$1
-    local dest=$2
+    local url="$1"
+    local dest="$2"
+    local min_size="${3:-1024}" # Default 1KB (protection against HTML 404/403 errors)
     local filename=$(basename "$dest")
+    local work_dir=$(dirname "$dest")
 
-    mkdir -p "$(dirname "$dest")"
+    # Create folder structure (Safety first)
+    mkdir -p "$work_dir"
 
-    # [LOGICA TA] Ștergem dacă are 0 biți
-    if [ -f "$dest" ] && [ ! -s "$dest" ]; then
-        echo "🧹 [CLEANUP] $filename are 0 biți. Se șterge..."
-        rm -f "$dest"
+    # --- VALIDATION GATE ---
+    if [ -f "$dest" ]; then
+        local actual_size=$(stat -c%s "$dest")
+        if [ "$actual_size" -lt "$min_size" ]; then
+            echo -e "🧹 \033[33m$filename is corrupted/empty ($actual_size bytes). Deleting...\033[0m"
+            rm -f "$dest"
+        else
+            echo -e "✅ \033[32m[SKIP] $filename is valid.\033[0m"
+            return 0
+        fi
     fi
 
-    if [ -s "$dest" ]; then
-        echo "✅ [SKIP] $filename este deja valid."
-    else
-        echo "📥 [FETCH] $filename..."
-        if command -v aria2c &> /dev/null; then
-            # 16 fire de execuție ca să nu înghețe la 2%
-            aria2c -x 16 -s 16 -k 1M --continue=true \
-                ${HF_TOKEN:+--header="Authorization: Bearer $HF_TOKEN"} \
-                "$url" -d "$(dirname "$dest")" -o "$filename"
+    echo -e "📥 \033[34m[DOWNLOAD] $filename...\033[0m"
+
+    # --- EXECUTION GATE (Aria2c vs Wget) ---
+    if command -v aria2c &> /dev/null; then
+        if [ -n "$HF_TOKEN" ]; then
+            aria2c -x 16 -s 16 -k 1M --continue=true --max-tries=5 --retry-wait=5 \
+                --header="Authorization: Bearer $HF_TOKEN" \
+                "$url" -d "$work_dir" -o "$filename"
         else
-            wget -c --show-progress \
-                ${HF_TOKEN:+--header="Authorization: Bearer $HF_TOKEN"} \
-                "$url" -O "$dest"
+            aria2c -x 16 -s 16 -k 1M --continue=true --max-tries=5 --retry-wait=5 \
+                "$url" -d "$work_dir" -o "$filename"
         fi
+    else
+        echo -e "⚠️ \033[33mAria2c missing, falling back to Wget...\033[0m"
+        if [ -n "$HF_TOKEN" ]; then
+            wget -c --header="Authorization: Bearer $HF_TOKEN" "$url" -O "$dest"
+        else
+            wget -c "$url" -O "$dest"
+        fi
+    fi
+
+    # --- FINAL VERIFICATION ---
+    if [ -s "$dest" ]; then
+        local check_size=$(stat -c%s "$dest")
+        if [ "$check_size" -ge "$min_size" ]; then
+            echo -e "✔️ \033[32m[OK] $filename verified.\033[0m"
+        else
+            echo -e "❌ \033[31m[FAIL] $filename is smaller than minimum size ($check_size < $min_size).\033[0m"
+            exit 1
+        fi
+    else
+        echo -e "❌ \033[31m[FAIL] $filename is completely empty or missing.\033[0m"
+        exit 1
     fi
 }
 
-# --- 5. LISTA DE FIȘIERE (Wan 2.1 / 2.2) ---
+# --- 4. ASSET LIST (The "Box" Setup) ---
 
-# URL-ul de bază de la Comfy-Org
-BASE_REPACK="https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files"
+# FIX: Using the stable 2.1 repo for common elements (VAE, Text Encoders, Audio)
+BASE_COMFY="https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files"
 
-# Text Encoder (cel care făcea probleme)
-smart_sync "$BASE_REPACK/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" \
+# 1. Text Encoder (UMT5)
+smart_sync "$BASE_COMFY/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" \
            "$MODELS_DIR/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
 
-# VAE
-smart_sync "$BASE_REPACK/vae/wan_2.1_vae.safetensors" \
+# 2. VAE (Wan 2.1/2.2 use the same VAE)
+smart_sync "$BASE_COMFY/vae/wan_2.1_vae.safetensors" \
            "$MODELS_DIR/vae/wan_2.1_vae.safetensors"
 
-# CLIP
-smart_sync "$BASE_REPACK/clip/clip_l.safetensors" \
+# 3. CLIP (Universal model pulled from the main ComfyUI repo)
+smart_sync "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" \
            "$MODELS_DIR/clip/clip_l.safetensors"
 
-# Modelul principal (Diffusion) - 15GB dintr-o bucată
+# 4. Audio Encoder (Wav2Vec2)
+smart_sync "$BASE_COMFY/audio_encoders/wav2vec2_large_english_fp16.safetensors" \
+           "$MODELS_DIR/audio_encoders/wav2vec2_large_english_fp16.safetensors"
+
+# 5. Diffusion Model (Wan 2.2 S2V 14B FP8 from Kijai)
 smart_sync "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/wan2.2_s2v_14B_fp8_scaled.safetensors" \
            "$MODELS_DIR/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors"
 
-echo "✨ [COMPLETE] Toate fișierele sunt la locul lor!"
+# 6. LoRA (High Noise for LightX2V)
+smart_sync "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" \
+           "$MODELS_DIR/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors"
+
+echo -e "\n🚀 \033[1;32m[COMPLETE] Coozila! Studio is armed and ready.\033[0m\n"

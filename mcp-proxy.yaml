@@ -12,6 +12,8 @@ version: '3.8'
 
 services:
   mcp-proxy:
+    IMAGE: mcp/pluggedin-mcp-proxy:Latest
+    #Image: coozila/mcp-proxy:v4.2
     container_name: mcp-proxy-gateway
     build:
       context: ./apps/mcp-proxy

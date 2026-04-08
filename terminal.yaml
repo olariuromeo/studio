@@ -1,0 +1,38 @@
+# ----------------------------------------------------------------------------------#
+#                                                                                   #
+#   Copyright (C) 2009 - 2026 Coozila! Licensed under the MIT License.              #
+#   Coozila! Team    lab@coozila.com                                               #
+#                                                                                   #
+# ----------------------------------------------------------------------------------#
+# Document: dev/terminal.yaml
+# Description: terminal
+# Services: terminal
+# ----------------------------------------------------------------------------------#
+version: '3.8'
+
+networks:
+  coozila-net:
+    external: true
+
+services:
+  terminal:
+    image: ghcr.io/open-webui/open-terminal:latest
+    container_name: open-terminal
+    restart: unless-stopped
+    env_file:
+      - .env.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "${OPEN_TERMINAL_HOME}:/workspace"
+    environment:
+      - TERMINALS_BACKEND=docker
+      - OPEN_TERMINAL_API_KEY=${OPEN_TERMINAL_API_KEY}
+    networks:
+      - coozila-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 5s
+      retries: 5

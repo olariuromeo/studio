@@ -51,8 +51,13 @@ run_step() {
 
 # 1. Load Environment & Tooling
 echo -e "${BLUE}⚙️  Loading Coozila! Environment Variables...${NC}"
-[ ! -f ".env" ] && cp .env.example .env
-export $(grep -v '^#' .env | xargs)
+# 1. Load Environment
+if [ -f "$STUDIO_ROOT/.env.dev" ]; then
+    export $(grep -v '^#' "$STUDIO_ROOT/.env.dev" | xargs)
+else
+    echo "❌ [ERROR] .env.dev missing. Required for Container Mapping."
+    exit 1
+fi
 export CUDA_TAG="cu$(echo $CUDA_VERSION | sed 's/\.//')"
 
 # Ensure ASDF plugins are ready
@@ -97,14 +102,20 @@ run_step "./dev/setup-webui.sh" "WebUI Base Layer"
 # 2. Inject Studio Overlays (Canvas, Core, Compose Patches)
 run_step "./dev/setup-studio.sh" "Studio Integration"
 
+# 4. Setup ComfyUI Independent Engine
+run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"
+
 # 3. Install OTIO Engine (Timeline Backbone)
 run_step "./dev/setup-otio.sh" "OTIO Engine"
 
-# 4. Setup ComfyUI Independent Engine
-#run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"
+# 5. Setup Wan 2.2 Model Sync (Auto-Path & Zero-Byte Guard)
+run_step "./dev/download-models.sh" "Wan 2.2 Model Sync"
 
-# 5. Setup Wan 2.2 Acceleration Layer
-#run_step "./dev/setup-wan2.sh" "Wan 2.2 Acceleration"
+# 5. Setup mcp-proxy server for distributed stack
+run_step "./dev/mcp-proxy.sh" "Terminal Stack"
+
+# 5. Setup Terminal Stack (mcp-proxy, MinIO, Postgres)
+run_step "./dev/setup-terminal.sh" "Terminal Stack"
 
 # ----------------------------------------------------------------------------------#
 # PHASE 2: FRONTEND ENGINE (Vite / SvelteKit)
