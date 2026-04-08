@@ -6,7 +6,7 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: dev/setup-comfy.sh
-# Description: Container-native Provisioning for CoofyUI Engine (ComfyUI v1.0+)
+# Description: Container-native Provisioning for ComfyUI Engine (ComfyUI v1.0+)
 # ----------------------------------------------------------------------------------#
 set -euo pipefail
 
@@ -205,21 +205,28 @@ echo "✅ COMFY setup complete!"
 # ----------------------------------------------------------------------------------#
 # 11. START COMFYUI (NON-BLOCKING)
 # ----------------------------------------------------------------------------------#
-echo "🚀 Starting ComfyUI (non-blocking)..."
+echo "🚀 Starting ComfyUI (RTX 3080 Optimized)..."
 
 cd "$STUDIO_ROOT/$COMFY_DIR"
-
 source venv/bin/activate
 
+# Load variables from environment or set safe defaults
 COMFY_PORT="${COMFY_PORT:-8188}"
+# THE KEY: If VRAM_MODE is lowvram, add the corresponding flag
+VRAM_FLAG="--${VRAM_MODE:-lowvram}" 
+# Add the rest of COMFY_ARGS defined for Wan 2.2
+EXTRA_ARGS="${COMFY_ARGS:- --fp8_e4m3fn-text-enc --fast-lowvram}"
 
-# Kill dacă portul e ocupat (safe)
+# Kill process if the port is occupied (safe)
 if command -v fuser &> /dev/null; then
     fuser -k "$COMFY_PORT/tcp" >/dev/null 2>&1 || true
 fi
 
-# Start în background + detach complet
+# Start with dynamic arguments
+echo "⚙️ Executing: python main.py --listen 0.0.0.0 --port $COMFY_PORT $VRAM_FLAG $EXTRA_ARGS"
+
 nohup python main.py --listen 0.0.0.0 --port "$COMFY_PORT" \
+    $VRAM_FLAG $EXTRA_ARGS \
     > "$STUDIO_ROOT/$COMFY_DIR/comfy.log" 2>&1 &
 
 COMFY_PID=$!
@@ -227,8 +234,5 @@ disown
 
 echo "$COMFY_PID" > "$STUDIO_ROOT/$COMFY_DIR/.comfy.pid"
 
-echo "✔️ ComfyUI running in background"
+echo "✔️ ComfyUI running with $VRAM_FLAG"
 echo "🌐 http://127.0.0.1:$COMFY_PORT"
-echo "📄 PID: $COMFY_PID"
-
-cd "$STUDIO_ROOT"
