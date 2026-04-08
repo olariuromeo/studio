@@ -6,122 +6,89 @@
 #                                                                                   #
 # ----------------------------------------------------------------------------------#
 # Document: dev/download-models.sh
-# Description: Container-native Provisioning for ComfyUI Engine (ComfyUI v1.0+)
+# Description: Official Provisioning Engine using Hugging Face Hub API
 # ----------------------------------------------------------------------------------#
 
-# Halt execution on critical errors
 set -e
 
 # 1. AUTO-PATH DETECTION
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STUDIO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 MODELS_DIR="$STUDIO_ROOT/apps/ComfyUI/models"
+PYTHON_BIN="$STUDIO_ROOT/apps/ComfyUI/venv/bin/python"
 DOT_ENV="$STUDIO_ROOT/.env.dev"
 
 echo -e "\n📂 \033[1;34mProject Root:\033[0m $STUDIO_ROOT"
-echo -e "📂 \033[1;34mModels Path:\033[0m $MODELS_DIR"
 
-# 2. LOAD ENVIRONMENT (SAFE GREP)
+# 2. BOOTSTRAP: ENSURE HF-HUB IS INSTALLED
+echo -e "⚙️ \033[34mChecking HF Downloader Requirements...\033[0m"
+if ! $PYTHON_BIN -m pip show huggingface_hub &> /dev/null; then
+    echo -e "📥 Installing huggingface_hub in virtual environment..."
+    $PYTHON_BIN -m pip install huggingface_hub
+fi
+
+# 3. LOAD ENVIRONMENT
 HF_TOKEN=""
 if [ -f "$DOT_ENV" ]; then
-    # Using '|| true' to prevent script failure (due to 'set -e') if the token is missing
     HF_TOKEN=$(grep '^HF_TOKEN=' "$DOT_ENV" | cut -d'=' -f2- | tr -d '"' | tr -d "'" || true)
     if [ -n "$HF_TOKEN" ]; then
         echo -e "🔑 \033[32mHF_TOKEN loaded from .env.dev\033[0m"
-    else
-        echo -e "⚠️ \033[33mHF_TOKEN not found in .env.dev. Downloading public models only.\033[0m"
     fi
 fi
 
-# 3. SMART SYNC ENGINE
-smart_sync() {
-    local url="$1"
-    local dest="$2"
-    local min_size="${3:-1024}" # Default 1KB (protection against HTML 404/403 errors)
-    local filename=$(basename "$dest")
-    local work_dir=$(dirname "$dest")
+# 4. SMART SYNC ENGINE (Hugging Face Hub Edition)
+smart_sync_hf() {
+    local repo="$1"
+    local filename="$2"
+    local local_dir="$3"
+    local min_size="$4"
+    local dest="$local_dir/$filename"
 
-    # Create folder structure (Safety first)
-    mkdir -p "$work_dir"
+    mkdir -p "$local_dir"
 
-    # --- VALIDATION GATE ---
+    # Validation: Check if file exists and exceeds the LFS pointer size
     if [ -f "$dest" ]; then
         local actual_size=$(stat -c%s "$dest")
-        if [ "$actual_size" -lt "$min_size" ]; then
-            echo -e "🧹 \033[33m$filename is corrupted/empty ($actual_size bytes). Deleting...\033[0m"
-            rm -f "$dest"
-        else
-            echo -e "✅ \033[32m[SKIP] $filename is valid.\033[0m"
+        if [ "$actual_size" -ge "$min_size" ]; then
+            echo -e "✅ \033[32m[SKIP] $filename is valid ($((actual_size / 1024 / 1024)) MB).\033[0m"
             return 0
+        else
+            echo -e "🧹 \033[33m$filename is a pointer or corrupted ($actual_size bytes). Replacing...\033[0m"
+            rm -f "$dest"
         fi
     fi
 
-    echo -e "📥 \033[34m[DOWNLOAD] $filename...\033[0m"
+    echo -e "📥 \033[34m[HF-DOWNLOAD] $filename from $repo...\033[0m"
+    
+    # Use official HF Python API to force real binary download (resolves LFS)
+    $PYTHON_BIN -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='$repo', filename='$filename', local_dir='$local_dir', local_dir_use_symlinks=False, token='$HF_TOKEN' if '$HF_TOKEN' else None)"
 
-    # --- EXECUTION GATE (Aria2c vs Wget) ---
-    if command -v aria2c &> /dev/null; then
-        if [ -n "$HF_TOKEN" ]; then
-            aria2c -x 16 -s 16 -k 1M --continue=true --max-tries=5 --retry-wait=5 \
-                --header="Authorization: Bearer $HF_TOKEN" \
-                "$url" -d "$work_dir" -o "$filename"
-        else
-            aria2c -x 16 -s 16 -k 1M --continue=true --max-tries=5 --retry-wait=5 \
-                "$url" -d "$work_dir" -o "$filename"
-        fi
-    else
-        echo -e "⚠️ \033[33mAria2c missing, falling back to Wget...\033[0m"
-        if [ -n "$HF_TOKEN" ]; then
-            wget -c --header="Authorization: Bearer $HF_TOKEN" "$url" -O "$dest"
-        else
-            wget -c "$url" -O "$dest"
-        fi
-    fi
-
-    # --- FINAL VERIFICATION ---
-    if [ -s "$dest" ]; then
-        local check_size=$(stat -c%s "$dest")
-        if [ "$check_size" -ge "$min_size" ]; then
-            echo -e "✔️ \033[32m[OK] $filename verified.\033[0m"
-        else
-            echo -e "❌ \033[31m[FAIL] $filename is smaller than minimum size ($check_size < $min_size).\033[0m"
-            exit 1
-        fi
-    else
-        echo -e "❌ \033[31m[FAIL] $filename is completely empty or missing.\033[0m"
+    # Final Integrity Check
+    if [ ! -s "$dest" ]; then
+        echo -e "❌ \033[31m[FAIL] $filename download failed.\033[0m"
         exit 1
     fi
+    echo -e "✔️ \033[32m[OK] $filename verified.\033[0m"
 }
 
-# --- 4. ASSET LIST (The "Box" Setup) ---
+# --- 5. ASSET LIST (Verified Byte-Exact Thresholds) ---
 
-# Repositories Base
-BASE_COMFY_21="https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files"
-BASE_COMFY_22="https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files"
+# 1. Text Encoder (UMT5)
+smart_sync_hf "Comfy-Org/Wan_2.1_ComfyUI_repackaged" "umt5_xxl_fp8_e4m3fn_scaled.safetensors" "$MODELS_DIR/text_encoders" 6735906897
 
-# --- 4. ASSET LIST (Coozila! Exact Byte Verification) ---
+# 2. VAE
+smart_sync_hf "wose/comfyui-models" "wan_2.1_vae.safetensors" "$MODELS_DIR/vae" 253815318
 
-# 1. Text Encoder (UMT5) - Exact: 6.735.906.897 bytes
-smart_sync "$BASE_COMFY_21/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" \
-           "$MODELS_DIR/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" 6735906897
+# 3. CLIP (Flux/Wan compatible)
+smart_sync_hf "comfyanonymous/flux_text_encoders" "clip_l.safetensors" "$MODELS_DIR/clip" 246513732
 
-# 2. VAE - Exact: 1.141.724.332 bytes
-smart_sync "$BASE_COMFY_21/vae/wan_2.1_vae.safetensors" \
-           "$MODELS_DIR/vae/wan_2.1_vae.safetensors" 1141724332
+# 4. Audio Encoder (Specific for Wan 2.2)
+smart_sync_hf "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wav2vec2_large_english_fp16.safetensors" "$MODELS_DIR/audio_encoders" 631114770
 
-# 3. CLIP (Flux/Wan) - Exact: 246.513.732 bytes
-smart_sync "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" \
-           "$MODELS_DIR/clip/clip_l.safetensors" 246513732
+# 5. Diffusion Model (Wan 2.2 - 14B S2V)
+smart_sync_hf "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_s2v_14B_fp8_scaled.safetensors" "$MODELS_DIR/diffusion_models" 16653330620
 
-# 4. Audio Encoder (Wav2Vec2) - Exact: 631.114.770 bytes
-smart_sync "$BASE_COMFY_22/audio_encoders/wav2vec2_large_english_fp16.safetensors" \
-           "$MODELS_DIR/audio_encoders/wav2vec2_large_english_fp16.safetensors" 631114770
+# 6. LoRA (Turbo 4-Step)
+smart_sync_hf "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" "$MODELS_DIR/loras" 153253116
 
-# 5. Diffusion Model (The Beast) - Exact: 16.653.330.620 bytes
-smart_sync "$BASE_COMFY_22/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors" \
-           "$MODELS_DIR/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors" 16653330620
-
-# 6. LoRA (Lightx2V) - Exact: 153.253.116 bytes
-smart_sync "$BASE_COMFY_22/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" \
-           "$MODELS_DIR/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" 153253116
-
-echo -e "\n🚀 \033[1;32m[COMPLETE] Coozila! Studio is armed with Wan 2.2 and ready for action.\033[0m\n"
+echo -e "\n🚀 \033[1;32m[COMPLETE] Coozila! Studio is armed and ready for action.\033[0m\n"
