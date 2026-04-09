@@ -8,25 +8,26 @@
 # Description: Minimalist shell tracking. Everything else is VISIBLE.
 # ----------------------------------------------------------------------------------#
 
-# --- 🚀 UNIVERSAL APPS SHELL ---
-# Ascundem tot ce e în interiorul aplicațiilor, dar păstrăm folderul aplicației.
+# --- UNIVERSAL APPS SHELL ---
 apps/*/**
 !apps/*/
 
-# --- 💾 UNIVERSAL DATA SHELL ---
-# Ascundem tot ce e în data, dar păstrăm folderul data.
+# --- UNIVERSAL DATA SHELL ---
 data/**
 !data/
 !data/.gitkeep
 
-# --- 🐍 PYTHON RUNTIME TRASH ---
-# Ascundem DOAR gunoiul generat de execuție, NU și configurările.
+# --- PYTHON RUNTIME TRASH ---
 **/__pycache__/
 **/*.py[cod]
 .env
 .env.*
 
-# --- 🖥️ OS & IDE SPECIFIC ---
+# --- PROVISIONING BUFFER ---
+.tmp_models/
+.hf-cli/
+
+# --- OS & IDE SPECIFIC ---
 .DS_Store
 Thumbs.db
 .vscode/
