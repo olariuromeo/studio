@@ -54,7 +54,7 @@ if [ -d "$COMFY_VENV" ]; then
     VENV_PIP="$COMFY_VENV/bin/pip"
 
     echo "   -> Upgrading build tools..."
-    $VENV_PIP install --upgrade pip setuptools wheel --no-cache-dir
+    $VENV_PIP install --upgrade pip "setuptools<82" wheel --no-cache-dir
 
     echo "   -> Installing Wrapper requirements..."
     if [ -f "$STUDIO_ROOT/$WAN_REPO_DIR/requirements.txt" ]; then

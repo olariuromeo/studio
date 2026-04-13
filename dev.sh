@@ -111,6 +111,9 @@ run_step "./dev/setup-wan2.sh" "Wan 2.2 Engine"
 # 5. Setup Wan 2.2 Model Sync (Auto-Path & Zero-Byte Guard)
 run_step "./dev/download-models.sh" "Wan 2.2 Model Sync"
 
+# 6. Setup HeartMuLA (Audio Engine with Hugging Face Sync)
+run_step "./dev/setup-heartmula.sh" "HeartMuLA Integration"
+
 # 3. Install OTIO Engine (Timeline Backbone)
 #run_step "./dev/setup-otio.sh" "OTIO Engine"
 

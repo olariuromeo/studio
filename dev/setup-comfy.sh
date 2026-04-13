@@ -101,46 +101,43 @@ source venv/bin/activate
 pip install --upgrade pip
 
 # ----------------------------------------------------------------------------------#
-# 4. GPU Detection + PyTorch Install (DEV ONLY .env.dev)
+# 4. GPU Detection & Descending Version Discovery
 # ----------------------------------------------------------------------------------#
-echo "🔍 Detecting GPU..."
-
-USE_CUDA=false
-
 if command -v nvidia-smi &> /dev/null; then
     echo "✔️ NVIDIA GPU detected"
-    nvidia-smi || true
-    USE_CUDA=true
 else
-    echo "⚠️ No NVIDIA GPU detected → CPU mode"
+    echo "❌ No NVIDIA GPU detected. Terminating (Strict Dev Mode)."
+    exit 1
 fi
 
-echo "📥 Installing PyTorch..."
+# 1. PRIMARY TARGET (Admin Input from .env)
+ADMIN_CUDA_TAG="cu$(echo ${CUDA_VERSION:-12.4} | sed 's/\.//')"
+echo "🧠 Primary target (Admin Input): $ADMIN_CUDA_TAG"
 
-# --- STRICT DEV ENV LOAD ---
-CUDA_VERSION="${CUDA_VERSION:-12.1}"
+# 2. DISCOVERY LIST (Descending order for fallback)
+# We start from 12.6 down to 12.1 to find the newest available stable build
+STABLE_FALLBACKS=("$ADMIN_CUDA_TAG" "cu126" "cu125" "cu124" "cu121" "cu130")
 
-map_cuda_to_torch() {
-    case "$1" in
-        11.*) echo "cu118" ;;
-        12.0|12.1) echo "cu121" ;;
-        12.2|12.3|12.4) echo "cu124" ;;
-        12.5|12.6|13.*) echo "cu124" ;;  # forward fallback
-        *) echo "cu121" ;;
-    esac
-}
+INSTALLED=false
 
-if [ "$USE_CUDA" = true ]; then
-    CUDA_TAG="$(map_cuda_to_torch "$CUDA_VERSION")"
+for TAG in "${STABLE_FALLBACKS[@]}"; do
+    echo "🔍 Attempting installation for: $TAG..."
+    
+    # Using --quiet to keep logs clean during discovery, but showing errors if it's the last attempt
+    if pip install torch torchvision torchaudio \
+        --index-url "https://download.pytorch.org/whl/$TAG" \
+        --extra-index-url "https://pypi.org/simple" --no-cache-dir; then
+        echo "✅ Successfully installed PyTorch using $TAG"
+        INSTALLED=true
+        break
+    else
+        echo "⚠️  $TAG build not found on PyTorch servers. Trying next..."
+    fi
+done
 
-    echo "🧠 CUDA from .env.dev: $CUDA_VERSION"
-    echo "⚙️ PyTorch CUDA build: $CUDA_TAG"
-
-    pip install torch torchvision torchaudio \
-        --index-url "https://download.pytorch.org/whl/$CUDA_TAG"
-else
-    echo "⚙️ Installing CPU PyTorch"
-    pip install torch torchvision torchaudio
+if [ "$INSTALLED" = false ]; then
+    echo "❌ Critical Error: Could not find a compatible PyTorch build for any targeted CUDA version."
+    exit 1
 fi
 
 # ----------------------------------------------------------------------------------#
@@ -205,29 +202,27 @@ git add "$COMFY_DIR" "$MANAGER_DIR"
 echo "✅ COMFY setup complete!"
 
 # ----------------------------------------------------------------------------------#
-# 11. START COMFYUI (NON-BLOCKING)
+# 11. START COMFYUI
 # ----------------------------------------------------------------------------------#
 echo "🚀 Starting ComfyUI (RTX 3080 Optimized)..."
 
 cd "$STUDIO_ROOT/$COMFY_DIR"
 source venv/bin/activate
 
-# Load variables from environment or set safe defaults
-COMFY_PORT="${COMFY_PORT:-8188}"
-# THE KEY: If VRAM_MODE is lowvram, add the corresponding flag
-VRAM_FLAG="--${VRAM_MODE:-lowvram}" 
-# Add the rest of COMFY_ARGS defined for Wan 2.2
-EXTRA_ARGS="${COMFY_ARGS:- --fp8_e4m3fn-text-enc --fast-lowvram}"
+# Load variables strictly from .env.dev, without additions or fallbacks
+PORT="$ENGINE_PORT"
+VRAM_FLAG="$VRAM_MODE"
+EXTRA_ARGS="$COMFY_ARGS"
 
 # Kill process if the port is occupied (safe)
 if command -v fuser &> /dev/null; then
-    fuser -k "$COMFY_PORT/tcp" >/dev/null 2>&1 || true
+    fuser -k "$PORT/tcp" >/dev/null 2>&1 || true
 fi
 
-# Start with dynamic arguments
-echo "⚙️ Executing: python main.py --listen 0.0.0.0 --port $COMFY_PORT $VRAM_FLAG $EXTRA_ARGS"
+# Start with purely environment-driven arguments
+echo "⚙️ Executing: python main.py --listen 0.0.0.0 --port $PORT $VRAM_FLAG $EXTRA_ARGS"
 
-nohup python main.py --listen 0.0.0.0 --port "$COMFY_PORT" \
+nohup python main.py --listen 0.0.0.0 --port "$PORT" \
     $VRAM_FLAG $EXTRA_ARGS \
     > "$STUDIO_ROOT/$COMFY_DIR/comfy.log" 2>&1 &
 
@@ -237,4 +232,4 @@ disown
 echo "$COMFY_PID" > "$STUDIO_ROOT/$COMFY_DIR/.comfy.pid"
 
 echo "✔️ ComfyUI running with $VRAM_FLAG"
-echo "🌐 http://127.0.0.1:$COMFY_PORT"
+echo "🌐 http://127.0.0.1:$PORT"
