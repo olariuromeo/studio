@@ -105,12 +105,6 @@ run_step "./dev/setup-studio.sh" "Studio Integration"
 # 4. Setup ComfyUI Independent Engine
 run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"
 
-# 3. Install Wan 2.2 Engine (Optimized Wrapper + Dependencies)
-run_step "./dev/setup-wan2.sh" "Wan 2.2 Engine"
-
-# 4. Setup HeartMuLA (Audio Engine with Hugging Face Sync)
-run_step "./dev/setup-heartmula.sh" "HeartMuLA Integration"
-
 # 5. Install OTIO Engine (Timeline Backbone)
 #run_step "./dev/setup-otio.sh" "OTIO Engine"
 

@@ -191,6 +191,48 @@ if [ -f "$MANAGER_TARGET/requirements.txt" ]; then
     pip install -r "$MANAGER_TARGET/requirements.txt"
 fi
 
+# ----------------------------------------------------------------------------------#
+# 9.5. Integrate Sub-Engines (HeartMuLA, Wan2, etc.)
+# ----------------------------------------------------------------------------------#
+# ANSI Colors for professional logging
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo -e "\n${BLUE}🔌 Injecting Custom Node Engines...${NC}"
+
+# Define local run_step to maintain execution flow and reporting
+run_step() {
+    local script_path=$1
+    local step_name=$2
+    
+    echo -e "🚀 [EXECUTING] $step_name..."
+    
+    if [ -f "$script_path" ]; then
+        chmod +x "$script_path"
+        # Execute the sub-provisioner
+        if bash "$script_path"; then
+            echo -e "${GREEN}✅ $step_name: SUCCESS${NC}"
+        else
+            echo -e "${RED}❌ $step_name: FAILED${NC}"
+            return 1
+        fi
+    else
+        echo -e "${RED}❌ $step_name: FAILED (File not found at $script_path)${NC}"
+        return 1
+    fi
+}
+
+# --- MODULE SELECTION ---
+# Comment out with '#' the engines you do not wish to install/update
+run_step "$STUDIO_ROOT/dev/setup-wan2.sh" "Wan 2.2 Engine"
+run_step "$STUDIO_ROOT/dev/setup-heartmula.sh" "HeartMuLA Integration"
+
+# Future modules can be added here:
+# run_step "$STUDIO_ROOT/dev/setup-example.sh" "Example Engine"
+
+
 deactivate
 
 # ----------------------------------------------------------------------------------#
