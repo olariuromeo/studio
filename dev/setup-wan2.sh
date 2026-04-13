@@ -102,3 +102,58 @@ fi
 echo -e "\n✅ [SUCCESS] Wan 2.2 Wrapper is fully provisioned and linked."
 echo -e "🚀 \033[1;32mCoozila! Studio is armed and ready.\033[0m"
 echo -e "💡 \033[1;33m[TIP]\033[0m Start the engine with \033[1;34mpython main.py \$COMFY_ARGS\033[0m to enable the 64GB RAM buffer.\n"
+
+# ----------------------------------------------------------------------------------#
+# 5. Download Wan 2.2 Assets (Physical Sync Engine)
+# ----------------------------------------------------------------------------------#
+MODELS_DIR="$STUDIO_ROOT/$COMFY_DIR/models"
+echo -e "\n📥 [WAN 2.2] Starting Physical Model Sync..."
+
+# Ensure we have the HF binary and Token
+export PATH="$HOME/.local/bin:$PATH"
+HF_BINARY=$(command -v hf || command -v huggingface-cli || echo "$HOME/.local/bin/hf")
+
+if [ -n "${HF_TOKEN:-}" ]; then
+    "$HF_BINARY" auth login --token "$HF_TOKEN" > /dev/null 2>&1
+fi
+
+# Core Sync Function (Physical Copy)
+sync_asset() {
+    local repo="$1"
+    local remote_path="$2"
+    local local_target_dir="$3"
+    local filename=$(basename "$remote_path")
+    local final_dest="$local_target_dir/$filename"
+
+    echo "   -> [SYNC] Checking $filename..."
+    mkdir -p "$local_target_dir"
+
+    "$HF_BINARY" download "$repo" "$remote_path" --local-dir "$local_target_dir"
+
+    # Convert HF symlink to physical file for portability
+    if [ -L "$final_dest" ]; then
+        echo "      [FIX] Converting symlink to physical..."
+        cp --remove-destination "$(readlink -f "$final_dest")" "$final_dest"
+        chmod 664 "$final_dest"
+    fi
+}
+
+# --- WAN 2.2 CORE ASSETS ---
+
+# 1. VAE
+sync_asset "Comfy-Org/Wan_2.1_ComfyUI_repackaged" "split_files/vae/wan_2.1_vae.safetensors" "$MODELS_DIR/vae"
+
+# 2. Text Encoders (UMT5 XXL FP8 optimized for 10GB VRAM)
+sync_asset "Comfy-Org/Wan_2.1_ComfyUI_repackaged" "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" "$MODELS_DIR/text_encoders"
+sync_asset "comfyanonymous/flux_text_encoders" "clip_l.safetensors" "$MODELS_DIR/clip"
+
+# 3. Diffusion Models (S2V 14B FP8 Scaled - The Sweet Spot for RTX 3080)
+sync_asset "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "split_files/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors" "$MODELS_DIR/diffusion_models"
+
+# 4. Audio Encoders (For Video-to-Audio / LipSync)
+sync_asset "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors" "$MODELS_DIR/audio_encoders"
+
+# 5. Specialized LoRAs (4-Step Lightning)
+sync_asset "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" "$MODELS_DIR/loras"
+
+echo -e "\n✅ [SUCCESS] Wan 2.2: Environment, Wrapper, and Physical Models are READY."
