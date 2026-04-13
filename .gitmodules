@@ -24,3 +24,6 @@
 [submodule "apps/ComfyUI-WanVideoWrapper"]
 	path = apps/ComfyUI-WanVideoWrapper
 	url = https://github.com/kijai/ComfyUI-WanVideoWrapper.git
+[submodule "src/heartmula"]
+	path = src/heartmula
+	url = https://github.com/benjiyaya/HeartMuLa_ComfyUI

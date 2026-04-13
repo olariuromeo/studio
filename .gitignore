@@ -17,11 +17,14 @@ data/**
 !data/
 !data/.gitkeep
 
+# --- ENVIRONMENT & SECRETS ---
+.env
+.env.*
+!.env.example
+
 # --- PYTHON RUNTIME TRASH ---
 **/__pycache__/
 **/*.py[cod]
-.env
-.env.*
 
 # --- PROVISIONING BUFFER ---
 .tmp_models/
