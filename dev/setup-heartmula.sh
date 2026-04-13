@@ -37,13 +37,16 @@ set +a
 cd "$STUDIO_ROOT"
 
 # ----------------------------------------------------------------------------------#
-# 1. HeartMuLA Submodule Setup
+# 1. HeartMuLA Submodule Setup (Self-Healing Logic)
 # ----------------------------------------------------------------------------------#
+echo "🔍 Checking HeartMuLA submodule status..."
+
 if ! grep -q "path = $HEARTMULA_DIR" .gitmodules 2>/dev/null; then
-    echo "→ Registering HeartMuLA submodule..."
+    echo "→ Registering HeartMuLA as an official submodule..."
     git submodule add -f "$HEARTMULA_REPO" "$HEARTMULA_DIR"
 fi
 
+git submodule sync "$HEARTMULA_DIR"
 git submodule update --init --recursive -- "$HEARTMULA_DIR"
 
 # ----------------------------------------------------------------------------------#
