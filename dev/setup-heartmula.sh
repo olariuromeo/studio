@@ -85,29 +85,54 @@ if ! command -v ffmpeg &> /dev/null; then
 fi
 
 # ----------------------------------------------------------------------------------#
-# 4. Download Model Weights
+# 4. Download Model Weights (Physical Sync Engine)
 # ----------------------------------------------------------------------------------#
-MODELS_PATH="$STUDIO_ROOT/$COMFY_DIR/models"
-echo "📥 Downloading HeartMuLA models to $MODELS_PATH/HeartMuLa..."
+MODELS_DIR="$STUDIO_ROOT/$COMFY_DIR/models"
+HEARTMULA_MODELS_DIR="$MODELS_DIR/HeartMuLa"
 
-mkdir -p "$MODELS_PATH/HeartMuLa"
-cd "$MODELS_PATH"
+echo "📥 Syncing HeartMuLA models (Physical Copy Mode)..."
 
-# 1. HeartMuLaGen
-echo "→ Downloading HeartMuLaGen..."
-huggingface-cli download HeartMuLa/HeartMuLaGen --local-dir ./HeartMuLa
+export PATH="$HOME/.local/bin:$PATH"
+# Fallback to huggingface-cli if custom 'hf' alias is not found
+HF_BINARY=$(command -v hf || command -v huggingface-cli || echo "$HOME/.local/bin/hf")
+
+# Auth Check (HF_TOKEN is already loaded from .env.dev at the top of the script)
+if [ -n "${HF_TOKEN:-}" ]; then
+    "$HF_BINARY" auth login --token "$HF_TOKEN" > /dev/null 2>&1
+fi
+
+# Function to download entire repo and convert symlinks to physical files
+sync_repo() {
+    local repo="$1"
+    local local_target_dir="$2"
+
+    echo "[SYNC] Checking repo $repo..."
+    mkdir -p "$local_target_dir"
+
+    # Download the entire repo
+    "$HF_BINARY" download "$repo" --local-dir "$local_target_dir"
+
+    # Convert HF cache symlinks to physical files
+    find "$local_target_dir" -type l -print0 | while IFS= read -r -d '' symlink; do
+        echo "[FIX] Converting symlink to physical file: $(basename "$symlink")..."
+        cp --remove-destination "$(readlink -f "$symlink")" "$symlink"
+        chmod 664 "$symlink"
+    done
+
+    echo "[OK] $repo verified and synchronized."
+}
+
+# 1. HeartMuLaGen (Root level of HeartMuLa models)
+sync_repo "HeartMuLa/HeartMuLaGen" "$HEARTMULA_MODELS_DIR"
 
 # 2. Base model (Using RL-oss-3B-20260123)
-echo "→ Downloading HeartMuLa-RL-oss-3B-20260123..."
-huggingface-cli download HeartMuLa/HeartMuLa-RL-oss-3B-20260123 --local-dir ./HeartMuLa/HeartMuLa-RL-oss-3B-20260123
+sync_repo "HeartMuLa/HeartMuLa-RL-oss-3B-20260123" "$HEARTMULA_MODELS_DIR/HeartMuLa-RL-oss-3B-20260123"
 
 # 3. HeartCodec model (Matching the 20260123 version)
-echo "→ Downloading HeartCodec-oss-20260123..."
-huggingface-cli download HeartMuLa/HeartCodec-oss-20260123 --local-dir ./HeartMuLa/HeartCodec-oss-20260123
+sync_repo "HeartMuLa/HeartCodec-oss-20260123" "$HEARTMULA_MODELS_DIR/HeartCodec-oss-20260123"
 
 # 4. HeartTranscriptor
-echo "→ Downloading HeartTranscriptor-oss..."
-huggingface-cli download HeartMuLa/HeartTranscriptor-oss --local-dir ./HeartMuLa/HeartTranscriptor-oss
+sync_repo "HeartMuLa/HeartTranscriptor-oss" "$HEARTMULA_MODELS_DIR/HeartTranscriptor-oss"
 
 deactivate
 
@@ -117,4 +142,4 @@ deactivate
 cd "$STUDIO_ROOT"
 git add "$HEARTMULA_DIR"
 
-echo "✅ HeartMuLA setup complete! Models downloaded and submodule linked."
+echo "✅ HeartMuLA setup complete! Models physically synced and submodule linked."

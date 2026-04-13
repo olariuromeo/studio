@@ -18,15 +18,18 @@
 	path = apps/ComfyUI
 	url = https://github.com/kabballa/ComfyUI.git
 	ignore = all
+
 [submodule "apps/ComfyUI-Manager"]
 	path = apps/ComfyUI-Manager
 	url = https://github.com/kabballa/ComfyUI-Manager.git
+	ignore = all
+
 [submodule "apps/ComfyUI-WanVideoWrapper"]
 	path = apps/ComfyUI-WanVideoWrapper
 	url = https://github.com/kijai/ComfyUI-WanVideoWrapper.git
-[submodule "src/heartmula"]
-	path = src/heartmula
-	url = https://github.com/benjiyaya/HeartMuLa_ComfyUI
+	ignore = all
+
 [submodule "apps/HeartMuLa_ComfyUI"]
 	path = apps/HeartMuLa_ComfyUI
 	url = https://github.com/benjiyaya/HeartMuLa_ComfyUI
+	ignore = all
