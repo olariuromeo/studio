@@ -111,7 +111,7 @@ else
 fi
 
 # 1. PRIMARY TARGET (Admin Input from .env)
-ADMIN_CUDA_TAG="cu$(echo ${CUDA_VERSION:-12.4} | sed 's/\.//')"
+ADMIN_CUDA_TAG="cu$(echo ${CUDA_VERSION} | sed 's/\.//')"
 echo "🧠 Primary target (Admin Input): $ADMIN_CUDA_TAG"
 
 # 2. DISCOVERY LIST (Descending order for fallback)

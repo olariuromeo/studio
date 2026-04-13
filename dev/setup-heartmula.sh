@@ -67,24 +67,35 @@ echo "📦 Installing HeartMuLA dependencies..."
 cd "$STUDIO_ROOT/$COMFY_DIR"
 
 if [ ! -f "venv/bin/activate" ]; then
-    echo "❌ VENV not found in $COMFY_DIR. Please run setup-comfy.sh first."
+    echo "❌ ERROR: VENV not found in $COMFY_DIR. Run setup-comfy.sh first."
     exit 1
 fi
 
+# Activate the existing ComfyUI environment
 source venv/bin/activate
 
+# Upgrade pip to match current VENV standards
+pip install --upgrade pip
+
 if [ -f "$HEARTMULA_TARGET/requirements.txt" ]; then
+    echo "→ Installing from requirements.txt..."
     pip install -r "$HEARTMULA_TARGET/requirements.txt"
 fi
 
-# Install required extra modules as per documentation
-echo "📦 Installing extra modules (soundfile, torchtune, torchao, huggingface_hub)..."
-pip install soundfile torchtune torchao huggingface_hub
+# Use CUDA_TAG from environment (calculated in setup-comfy.sh or .env.dev)
+# This ensures HeartMuLA matches the ComfyUI core version
+echo "→ Installing extra modules for ${CUDA_TAG}: soundfile, torchtune, torchao, huggingface_hub..."
 
-# Check for FFmpeg (Required for audio processing)
+pip install \
+    soundfile \
+    torchtune \
+    torchao \
+    huggingface_hub \
+    --extra-index-url "https://download.pytorch.org/whl/${CUDA_TAG}"
+
+# FFmpeg check
 if ! command -v ffmpeg &> /dev/null; then
     echo "⚠️ WARNING: FFmpeg is not installed on this system!"
-    echo "👉 Linux: sudo apt-get install ffmpeg | Windows: Download shared build and add to PATH"
 fi
 
 # ----------------------------------------------------------------------------------#
@@ -137,12 +148,15 @@ sync_repo "HeartMuLa/HeartCodec-oss-20260123" "$HEARTMULA_MODELS_DIR/HeartCodec-
 # 4. HeartTranscriptor
 sync_repo "HeartMuLa/HeartTranscriptor-oss" "$HEARTMULA_MODELS_DIR/HeartTranscriptor-oss"
 
+# ----------------------------------------------------------------------------------#
+# 5. Finalize & Cleanup
+# ----------------------------------------------------------------------------------#
+echo "🧹 Finalizing setup..."
+
+# Exit the virtual environment before finishing the script
 deactivate
 
-# ----------------------------------------------------------------------------------#
-# 5. Finalize
-# ----------------------------------------------------------------------------------#
 cd "$STUDIO_ROOT"
 git add "$HEARTMULA_DIR"
 
-echo "✅ HeartMuLA setup complete! Models physically synced and submodule linked."
+echo "✅ HeartMuLA setup complete! Returning to master orchestrator."
