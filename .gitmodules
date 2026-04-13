@@ -27,3 +27,6 @@
 [submodule "src/heartmula"]
 	path = src/heartmula
 	url = https://github.com/benjiyaya/HeartMuLa_ComfyUI
+[submodule "apps/HeartMuLa_ComfyUI"]
+	path = apps/HeartMuLa_ComfyUI
+	url = https://github.com/benjiyaya/HeartMuLa_ComfyUI
