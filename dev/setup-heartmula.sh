@@ -98,58 +98,31 @@ if [ -f "$HEARTMULA_TARGET/requirements.txt" ]; then
 fi
 
 # ----------------------------------------------------------------------------------#
-# 4. Download Model Weights (Physical Sync Engine)
+# 4. ASSETS (HEARTMULA)
 # ----------------------------------------------------------------------------------#
-MODELS_DIR="$STUDIO_ROOT/$COMFY_DIR/models"
-HEARTMULA_MODELS_DIR="$MODELS_DIR/HeartMuLa"
 
-echo "📥 Syncing HeartMuLA models (Physical Copy Mode)..."
+# LOAD ENGINE
+source "$STUDIO_ROOT/dev/models-download.sh"
 
-export PATH="$HOME/.local/bin:$PATH"
-# Fallback to huggingface-cli if custom 'hf' alias is not found
-HF_BINARY=$(command -v hf || command -v huggingface-cli || echo "$HOME/.local/bin/hf")
+ASSETS=(
+    # Core generative model
+    "HeartMuLa/HeartMuLaGen|HeartMuLaGen|HeartMuLa"
 
-# Auth Check (HF_TOKEN is already loaded from .env.dev at the top of the script)
-if [ -n "${HF_TOKEN:-}" ]; then
-    "$HF_BINARY" auth login --token "$HF_TOKEN" > /dev/null 2>&1
-fi
+    # Base 3B model (foundation checkpoint)
+    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year|HeartMuLa-oss-3B-happy-new-year|HeartMuLa"
 
-# Function to download entire repo and convert symlinks to physical files
-sync_repo() {
-    local repo="$1"
-    local local_target_dir="$2"
+    # Codec model (audio / latent compression core)
+    "HeartMuLa/HeartCodec-oss-20260123|HeartCodec-oss-20260123|HeartMuLa"
 
-    echo "[SYNC] Checking repo $repo..."
-    mkdir -p "$local_target_dir"
+    # RL fine-tuned 3B model
+    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123|HeartMuLa-RL-oss-3B-20260123|HeartMuLa-RL-oss-3B-20260123"
 
-    # Download the entire repo
-    "$HF_BINARY" download "$repo" --local-dir "$local_target_dir"
+    # Transcriptor model (speech / text alignment)
+    "HeartMuLa/HeartTranscriptor-oss|HeartTranscriptor-oss|HeartMuLa"
+)
 
-    # Convert HF cache symlinks to physical files
-    find "$local_target_dir" -type l -print0 | while IFS= read -r -d '' symlink; do
-        echo "[FIX] Converting symlink to physical file: $(basename "$symlink")..."
-        cp --remove-destination "$(readlink -f "$symlink")" "$symlink"
-        chmod 664 "$symlink"
-    done
-
-    echo "[OK] $repo verified and synchronized."
-}
-
-# 1. HeartMuLaGen (Common Configs)
-sync_repo "HeartMuLa/HeartMuLaGen" "$HEARTMULA_MODELS_DIR"
-
-# --- VERSION: BASE (Old/Standard) ---
-echo "📦 Syncing Base Version..."
-sync_repo "HeartMuLa/HeartMuLa-oss-3B" "$HEARTMULA_MODELS_DIR/HeartMuLa-oss-3B"
-sync_repo "HeartMuLa/HeartCodec-oss" "$HEARTMULA_MODELS_DIR/HeartCodec-oss"
-
-# --- VERSION: RL-20260123 (New/Optimized) ---
-echo "📦 Syncing RL-2026 Version..."
-sync_repo "HeartMuLa/HeartMuLa-RL-oss-3B-20260123" "$HEARTMULA_MODELS_DIR/HeartMuLa-RL-oss-3B-20260123"
-sync_repo "HeartMuLa/HeartCodec-oss-20260123" "$HEARTMULA_MODELS_DIR/HeartCodec-oss-20260123"
-
-# --- SHARED ASSETS ---
-sync_repo "HeartMuLa/HeartTranscriptor-oss" "$HEARTMULA_MODELS_DIR/HeartTranscriptor-oss"
+# EXECUTE
+run_assets
 
 # ----------------------------------------------------------------------------------#
 # 5. Finalize & Cleanup

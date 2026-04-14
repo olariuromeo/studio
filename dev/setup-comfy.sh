@@ -227,6 +227,8 @@ run_step() {
 run_step "$STUDIO_ROOT/dev/setup-wan2.sh" "Wan 2.2 Engine"
 run_step "$STUDIO_ROOT/dev/setup-heartmula.sh" "HeartMuLA Integration"
 
+# 2. DOWNLOAD ENGINE
+run_step "$STUDIO_ROOT/dev/models-download.sh" "Global Asset Download"
 # Future modules can be added here:
 # run_step "$STUDIO_ROOT/dev/setup-example.sh" "Example Engine"
 
