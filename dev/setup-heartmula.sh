@@ -59,10 +59,20 @@ if [ ! -L "$HEARTMULA_TARGET" ]; then
     ln -s "$STUDIO_ROOT/$HEARTMULA_DIR" "$HEARTMULA_TARGET"
 fi
 
-# Check for system library libsndfile
-if ! dpkg -l | grep -q libsndfile1; then
-    echo "⚠️ System library libsndfile1 missing. Attempting to install..."
-    sudo apt-get update && sudo apt-get install -y libsndfile1
+# ----------------------------------------------------------------------------------#
+# System Library Check (libsndfile1)
+# ----------------------------------------------------------------------------------#
+# Check package status without sudo to keep the execution light
+if dpkg-query -W -f='${Status}' libsndfile1 2>/dev/null | grep -q "ok installed"; then
+    echo "✔️ libsndfile1 is already installed. Skipping system tasks."
+else
+    echo "⚠️ libsndfile1 not found. Starting automated installation..."
+    
+    # Execute system update and installation only when necessary
+    sudo apt-get update -y -qq
+    sudo apt-get install -y libsndfile1
+    
+    echo "✅ libsndfile1 installed successfully."
 fi
 
 # ----------------------------------------------------------------------------------#
