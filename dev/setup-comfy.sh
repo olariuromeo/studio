@@ -177,8 +177,6 @@ git submodule update --init --recursive -- "$MANAGER_DIR"
 # ----------------------------------------------------------------------------------#
 MANAGER_TARGET="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/ComfyUI-Manager"
 
-mkdir -p "$STUDIO_ROOT/$COMFY_DIR/custom_nodes"
-
 if [ ! -L "$MANAGER_TARGET" ]; then
     echo "🔗 Linking Manager..."
     ln -s "$STUDIO_ROOT/$MANAGER_DIR" "$MANAGER_TARGET"
@@ -232,14 +230,9 @@ run_step "$STUDIO_ROOT/dev/setup-heartmula.sh" "HeartMuLA Integration"
 # Future modules can be added here:
 # run_step "$STUDIO_ROOT/dev/setup-example.sh" "Example Engine"
 
-
-deactivate
-
 # ----------------------------------------------------------------------------------#
 # 10. Finalize
 # ----------------------------------------------------------------------------------#
-cd "$STUDIO_ROOT"
-git add "$COMFY_DIR" "$MANAGER_DIR"
 
 echo "✅ COMFY setup complete!"
 
@@ -248,30 +241,45 @@ echo "✅ COMFY setup complete!"
 # ----------------------------------------------------------------------------------#
 echo "🚀 Starting ComfyUI (RTX 3080 Optimized)..."
 
-cd "$STUDIO_ROOT/$COMFY_DIR"
-source venv/bin/activate
+# Define absolute paths to avoid any confusion
+COMFY_PATH="$STUDIO_ROOT/$COMFY_DIR"
+PYTHON_VENV="$COMFY_PATH/venv/bin/python"
+LOG_FILE="$STUDIO_ROOT/comfy.log"
 
-# Load variables strictly from .env.dev, without additions or fallbacks
-PORT="$ENGINE_PORT"
-VRAM_FLAG="$VRAM_MODE"
-EXTRA_ARGS="$COMFY_ARGS"
-
-# Kill process if the port is occupied (safe)
-if command -v fuser &> /dev/null; then
-    fuser -k "$PORT/tcp" >/dev/null 2>&1 || true
+# 1. Validation: Check if main.py exists
+if [ ! -f "$COMFY_PATH/main.py" ]; then
+    echo "❌ ERROR: ComfyUI main.py not found at $COMFY_PATH"
+    exit 1
 fi
 
-# Start with purely environment-driven arguments
-echo "⚙️ Executing: python main.py --listen 0.0.0.0 --port $PORT $VRAM_FLAG $EXTRA_ARGS"
+# 2. Port Cleanup
+if command -v fuser &> /dev/null; then
+    fuser -k "$ENGINE_PORT/tcp" >/dev/null 2>&1 || true
+fi
 
-nohup python main.py --listen 0.0.0.0 --port "$PORT" \
-    $VRAM_FLAG $EXTRA_ARGS \
-    > "$STUDIO_ROOT/$COMFY_DIR/comfy.log" 2>&1 &
+# 3. Execution
+cd "$COMFY_PATH"
+echo "⚙️ Executing: $PYTHON_VENV main.py --listen 0.0.0.0 --port $ENGINE_PORT $VRAM_MODE $COMFY_ARGS"
 
+# Launch in background. The process inherits the VENV context.
+nohup "$PYTHON_VENV" main.py --listen 0.0.0.0 --port "$ENGINE_PORT" \
+    $VRAM_MODE $COMFY_ARGS \
+    > "$LOG_FILE" 2>&1 &
+
+# 4. Process Tracking
 COMFY_PID=$!
 disown
+echo "$COMFY_PID" > "$STUDIO_ROOT/.comfy.pid"
 
-echo "$COMFY_PID" > "$STUDIO_ROOT/$COMFY_DIR/.comfy.pid"
+# 5. Finalize & Environment Cleanup
+sleep 2
+if ps -p $COMFY_PID > /dev/null; then
+    echo "✔️ ComfyUI started successfully (PID: $COMFY_PID)"
+    echo "🌐 URL: http://127.0.0.1:$ENGINE_PORT"
+    echo "📝 Logs: tail -f $LOG_FILE"
+else
+    echo "❌ ERROR: ComfyUI failed to start."
+fi
 
-echo "✔️ ComfyUI running with $VRAM_FLAG"
-echo "🌐 http://127.0.0.1:$PORT"
+# EXIT VENV: Returning the shell to its original state
+deactivate

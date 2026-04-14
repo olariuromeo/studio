@@ -17,6 +17,10 @@ data/**
 !data/
 !data/.gitkeep
 
+# Engine Process IDs
+*.pid
+.comfy.pid
+
 # --- ENVIRONMENT & SECRETS ---
 .env
 .env.*

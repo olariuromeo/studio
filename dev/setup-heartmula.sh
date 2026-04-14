@@ -59,43 +59,32 @@ if [ ! -L "$HEARTMULA_TARGET" ]; then
     ln -s "$STUDIO_ROOT/$HEARTMULA_DIR" "$HEARTMULA_TARGET"
 fi
 
+# Check for system library libsndfile
+if ! dpkg -l | grep -q libsndfile1; then
+    echo "⚠️ System library libsndfile1 missing. Attempting to install..."
+    sudo apt-get update && sudo apt-get install -y libsndfile1
+fi
+
 # ----------------------------------------------------------------------------------#
 # 3. HeartMuLA Requirements (Using ComfyUI VENV)
 # ----------------------------------------------------------------------------------#
-echo "📦 Installing HeartMuLA dependencies..."
+echo "📦 Installing HeartMuLA specialized dependencies..."
 
-cd "$STUDIO_ROOT/$COMFY_DIR"
+# Use absolute path to venv pip to ensure zero environment leakage
+VENV_PIP="$STUDIO_ROOT/$COMFY_DIR/venv/bin/pip"
 
-if [ ! -f "venv/bin/activate" ]; then
-    echo "❌ ERROR: VENV not found in $COMFY_DIR. Run setup-comfy.sh first."
-    exit 1
-fi
+# Install only the heavy hitters required for audio/tensor optimization
+# We use --no-deps for torchtune/torchao to prevent them from overwriting our stable Torch cu124/126
+echo "→ Injecting torchtune, torchao and soundfile..."
+$VENV_PIP install soundfile --no-cache-dir
+$VENV_PIP install torchtune torchao --no-deps --no-cache-dir
 
-# Activate the existing ComfyUI environment
-source venv/bin/activate
-
-# Upgrade pip to match current VENV standards
-pip install --upgrade pip
+# FFmpeg is a system dependency, but the python wrapper is often needed
+$VENV_PIP install ffmpeg-python --no-cache-dir
 
 if [ -f "$HEARTMULA_TARGET/requirements.txt" ]; then
-    echo "→ Installing from requirements.txt..."
-    pip install -r "$HEARTMULA_TARGET/requirements.txt"
-fi
-
-# Use CUDA_TAG from environment (calculated in setup-comfy.sh or .env.dev)
-# This ensures HeartMuLA matches the ComfyUI core version
-echo "→ Installing extra modules for ${CUDA_TAG}: soundfile, torchtune, torchao, huggingface_hub..."
-
-pip install \
-    soundfile \
-    torchtune \
-    torchao \
-    huggingface_hub \
-    --extra-index-url "https://download.pytorch.org/whl/${CUDA_TAG}"
-
-# FFmpeg check
-if ! command -v ffmpeg &> /dev/null; then
-    echo "⚠️ WARNING: FFmpeg is not installed on this system!"
+    echo "→ Installing remaining nodes requirements..."
+    $VENV_PIP install -r "$HEARTMULA_TARGET/requirements.txt" --no-cache-dir
 fi
 
 # ----------------------------------------------------------------------------------#
@@ -136,16 +125,20 @@ sync_repo() {
     echo "[OK] $repo verified and synchronized."
 }
 
-# 1. HeartMuLaGen (Root level of HeartMuLa models)
+# 1. HeartMuLaGen (Common Configs)
 sync_repo "HeartMuLa/HeartMuLaGen" "$HEARTMULA_MODELS_DIR"
 
-# 2. Base model (Using RL-oss-3B-20260123)
-sync_repo "HeartMuLa/HeartMuLa-RL-oss-3B-20260123" "$HEARTMULA_MODELS_DIR/HeartMuLa-RL-oss-3B-20260123"
+# --- VERSION: BASE (Old/Standard) ---
+echo "📦 Syncing Base Version..."
+sync_repo "HeartMuLa/HeartMuLa-oss-3B" "$HEARTMULA_MODELS_DIR/HeartMuLa-oss-3B"
+sync_repo "HeartMuLa/HeartCodec-oss" "$HEARTMULA_MODELS_DIR/HeartCodec-oss"
 
-# 3. HeartCodec model (Matching the 20260123 version)
+# --- VERSION: RL-20260123 (New/Optimized) ---
+echo "📦 Syncing RL-2026 Version..."
+sync_repo "HeartMuLa/HeartMuLa-RL-oss-3B-20260123" "$HEARTMULA_MODELS_DIR/HeartMuLa-RL-oss-3B-20260123"
 sync_repo "HeartMuLa/HeartCodec-oss-20260123" "$HEARTMULA_MODELS_DIR/HeartCodec-oss-20260123"
 
-# 4. HeartTranscriptor
+# --- SHARED ASSETS ---
 sync_repo "HeartMuLa/HeartTranscriptor-oss" "$HEARTMULA_MODELS_DIR/HeartTranscriptor-oss"
 
 # ----------------------------------------------------------------------------------#
@@ -153,10 +146,24 @@ sync_repo "HeartMuLa/HeartTranscriptor-oss" "$HEARTMULA_MODELS_DIR/HeartTranscri
 # ----------------------------------------------------------------------------------#
 echo "🧹 Finalizing setup..."
 
-# Exit the virtual environment before finishing the script
-deactivate
+# We don't need 'deactivate' because we never 'sourced' the venv in this shell.
+# We used absolute paths ($VENV_PIP) which is much cleaner.
 
 cd "$STUDIO_ROOT"
-git add "$HEARTMULA_DIR"
+# Removed git add to keep your staged changes clean, as per our previous logic.
 
-echo "✅ HeartMuLA setup complete! Returning to master orchestrator."
+echo "✅ HeartMuLA setup complete!"
+
+# ----------------------------------------------------------------------------------#
+# 6. Validation (Pre-Flight Check)
+# ----------------------------------------------------------------------------------#
+echo "🧪 Running Import Validation..."
+
+# Use the absolute path to python to verify the installation
+if "$STUDIO_ROOT/$COMFY_DIR/venv/bin/python" -c "import soundfile; import torchtune; import torchao; print('✅ HeartMuLA Python Modules: OK')" ; then
+    echo -e "\033[0;32m✔️ HeartMuLA is ready for ComfyUI.\033[0m"
+else
+    echo -e "\033[0;31m❌ HeartMuLA Import Test FAILED.\033[0m"
+    echo "💡 Check if libsndfile1 is actually installed: dpkg -l | grep libsndfile1"
+    exit 1
+fi
