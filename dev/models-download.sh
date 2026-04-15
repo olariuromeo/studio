@@ -79,28 +79,45 @@ sync_asset() {
 
     # 3.2 DOWNLOAD (FILE vs FOLDER MODE)
 
-    if [ -z "$path" ]; then
+    if [ -z "$path" ] || [ "$path" = "" ]; then
         echo "📦 FOLDER MODE DETECTED"
 
+        # 3.2.1 Extract repository folder name
         local folder_name
         folder_name="$(basename "$repo")"
 
-        local final_dir="$storage/$folder_name"
+        # 3.2.2 Define local storage path (download destination)
+        local final_dir="$STUDIO_ROOT/data/models/$target/$folder_name"
 
-        # skip dacă există deja
+        # 3.2.3 Skip download if folder already exists
         if [ -d "$final_dir" ]; then
             echo "✔️ SKIP (folder exists): $folder_name"
         else
+            # 3.2.4 Download full repository from HuggingFace
             "$HF_BIN" download "$repo" --local-dir "$final_dir"
             echo "✔️ DOWNLOADED FOLDER: $final_dir"
         fi
 
-        # link în ComfyUI
+        # 3.2.5 Prepare ComfyUI target link directory
         local link_dir="$STUDIO_ROOT/$COMFY_DIR/models/$target"
         mkdir -p "$link_dir"
 
-        ln -sfn "$final_dir" "$link_dir/$folder_name"
+        # 3.2.6 Define final symlink path inside ComfyUI
+        local link_path="$link_dir/$folder_name"
 
+        # 3.2.7 Remove any previous broken link or folder
+        rm -rf "$link_path"
+
+        # 3.2.8 Create fresh symbolic link to downloaded model
+        ln -sfn "$final_dir" "$link_path"
+
+        # 3.2.9 Validate download
+        if [ ! -d "$final_dir" ]; then
+            echo "❌ DOWNLOAD FAILED: $final_dir"
+            exit 1
+        fi
+
+        # 3.2.10 Confirm successful linking
         echo "🔗 LINKED: $target/$folder_name"
 
         return 0
