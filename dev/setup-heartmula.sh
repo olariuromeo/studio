@@ -126,20 +126,17 @@ fi
 source "$STUDIO_ROOT/dev/models-download.sh"
 
 ASSETS=(
-    # Core generative model
-    "HeartMuLa/HeartMuLaGen||checkpoints"
+    # ROOT FILES (explode în root)
+    "HeartMuLa/HeartMuLaGen|HeartMuLa/."
 
-    # Base 3B model
-    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year||checkpoints"
+    # MODELS (cu rename + structură corectă)
+    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year|HeartMuLa/HeartMuLa-oss-3B"
 
-    # Codec
-    "HeartMuLa/HeartCodec-oss-20260123||audio_encoders"
+    "HeartMuLa/HeartCodec-oss-20260123|HeartMuLa/HeartCodec-oss"
 
-    # RL model
-    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123||checkpoints"
+    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123|HeartMuLa/HeartMuLa-RL-oss-3B"
 
-    # Transcriptor
-    "HeartMuLa/HeartTranscriptor-oss||text_encoders"
+    "HeartMuLa/HeartTranscriptor-oss|HeartMuLa/HeartTranscriptor-oss"
 )
 
 run_assets

@@ -77,48 +77,62 @@ sync_asset() {
         return 0
     fi
 
-    # 3.2 DOWNLOAD (FILE vs FOLDER MODE)
+    # 3.2 DOWNLOAD (FOLDER MODE - DECLARATIVE)
 
     if [ -z "$path" ] || [ "$path" = "" ]; then
         echo "📦 FOLDER MODE DETECTED"
 
-        # 3.2.1 Extract repository folder name
+        # 3.2.1 Extract repository folder name (source name)
         local folder_name
         folder_name="$(basename "$repo")"
 
-        # 3.2.2 Define local storage path (download destination)
-        local final_dir="$STUDIO_ROOT/data/models/$target/$folder_name"
+        # 3.2.2 Define storage path (internal cache)
+        local storage_dir="$STUDIO_ROOT/data/models/$folder_name"
 
-        # 3.2.3 Skip download if folder already exists
-        if [ -d "$final_dir" ]; then
-            echo "✔️ SKIP (folder exists): $folder_name"
+        # 3.2.3 Download if missing
+        if [ -d "$storage_dir" ]; then
+            echo "✔️ SKIP (exists): $folder_name"
         else
-            # 3.2.4 Download full repository from HuggingFace
-            "$HF_BIN" download "$repo" --local-dir "$final_dir"
-            echo "✔️ DOWNLOADED FOLDER: $final_dir"
+            "$HF_BIN" download "$repo" --local-dir "$storage_dir"
+            echo "✔️ DOWNLOADED: $storage_dir"
         fi
 
-        # 3.2.5 Prepare ComfyUI target link directory
-        local link_dir="$STUDIO_ROOT/$COMFY_DIR/models/$target"
-        mkdir -p "$link_dir"
+        # 3.2.4 Resolve destination path (FULLY DECLARED)
+        local base_models="$STUDIO_ROOT/$COMFY_DIR/models"
+        local final_target="$base_models/$dest_path"
 
-        # 3.2.6 Define final symlink path inside ComfyUI
-        local link_path="$link_dir/$folder_name"
+        # 3.2.5 ROOT MERGE MODE (dest ends with '/.')
+        if [[ "$dest_path" == */. ]]; then
+            local root_dir
+            root_dir="$(dirname "$final_target")"
 
-        # 3.2.7 Remove any previous broken link or folder
-        rm -rf "$link_path"
+            mkdir -p "$root_dir"
 
-        # 3.2.8 Create fresh symbolic link to downloaded model
-        ln -sfn "$final_dir" "$link_path"
+            for f in "$storage_dir"/*; do
+                local name
+                name="$(basename "$f")"
 
-        # 3.2.9 Validate download
-        if [ ! -d "$final_dir" ]; then
-            echo "❌ DOWNLOAD FAILED: $final_dir"
+                rm -rf "$root_dir/$name"
+                ln -sfn "$f" "$root_dir/$name"
+            done
+
+            echo "🔗 MERGED INTO: $root_dir"
+            return 0
+        fi
+
+        # 3.2.6 NORMAL LINK MODE
+        mkdir -p "$(dirname "$final_target")"
+
+        rm -rf "$final_target"
+        ln -sfn "$storage_dir" "$final_target"
+
+        # 3.2.7 Validate
+        if [ ! -d "$storage_dir" ]; then
+            echo "❌ DOWNLOAD FAILED: $storage_dir"
             exit 1
         fi
 
-        # 3.2.10 Confirm successful linking
-        echo "🔗 LINKED: $target/$folder_name"
+        echo "🔗 LINKED: $final_target"
 
         return 0
     fi

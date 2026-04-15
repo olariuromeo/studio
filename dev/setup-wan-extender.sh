@@ -45,19 +45,25 @@ echo "✔️ dependencies installed"
 source "$STUDIO_ROOT/dev/models-download.sh"
 
 ASSETS=(
-    # HeartMuLa Core Engine
-    "HeartMuLa/HeartMuLaGen||HeartMuLa/HeartMuLaGen"
+    # WAN base model
+    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors|diffusion_models"
 
-    # Base Model (RL variant)
-    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123||HeartMuLa/HeartMuLa-RL-oss-3B-20260123"
+    # VAE
+    "Comfy-Org/Wan_2.1_ComfyUI_repackaged|split_files/vae/wan_2.1_vae.safetensors|vae"
 
-    # Codec (MUST MATCH BASE MODEL)
-    "HeartMuLa/HeartCodec-oss-20260123||HeartMuLa/HeartCodec-oss-20260123"
+    # Text encoder
+    "Comfy-Org/Wan_2.1_ComfyUI_repackaged|split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors|text_encoders"
 
-    # Transcriptor
-    "HeartMuLa/HeartTranscriptor-oss||HeartMuLa/HeartMuLa/HeartTranscriptor-oss"
+    # CLIP
+    "comfyanonymous/flux_text_encoders|clip_l.safetensors|clip"
+
+    # LoRA (optional video motion extension)
+    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors|loras"
+
+    # Audio encoder (for VACE / extend workflows)
+    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors|audio_encoders"
 )
 
 run_assets
 
-echo "✅ HEARTMULA READY"
+echo "✅ WAN EXTENDER READY"
