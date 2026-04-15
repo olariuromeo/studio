@@ -8,11 +8,14 @@
 # Document: dev/setup-heartmula.sh
 # Description: Submodule-native Provisioning for HeartMuLA_ComfyUI
 # ----------------------------------------------------------------------------------#
+
 set -euo pipefail
 
-# 0. Context & Environment Loading
-STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ----------------------------------------------------------------------------------#
+# 0. CONTEXT INITIALIZATION
+# ----------------------------------------------------------------------------------#
 
+STUDIO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 trap 'echo "❌ Error at line $LINENO"; exit 1' ERR
 
 ENV_DEV="$STUDIO_ROOT/.env.dev"
@@ -22,14 +25,10 @@ if [ ! -f "$ENV_DEV" ]; then
     exit 1
 fi
 
-echo "✔️ Using .env.dev"
-
-# Load env safely
 set -a
 source "$ENV_DEV"
 set +a
 
-# Validate required ENV
 : "${COMFY_DIR:?Missing COMFY_DIR}"
 : "${HEARTMULA_REPO:?Missing HEARTMULA_REPO}"
 : "${HEARTMULA_DIR:?Missing HEARTMULA_DIR}"
@@ -37,22 +36,45 @@ set +a
 cd "$STUDIO_ROOT"
 
 # ----------------------------------------------------------------------------------#
-# 1. HeartMuLA Submodule Setup (Self-Healing Logic)
+# 1.1 HEARTMULA SUBMODULE BOOTSTRAP (SELF-HEALING)
 # ----------------------------------------------------------------------------------#
-echo "🔍 Checking HeartMuLA submodule status..."
 
-if ! grep -q "path = $HEARTMULA_DIR" .gitmodules 2>/dev/null; then
-    echo "→ Registering HeartMuLA as an official submodule..."
-    git submodule add -f "$HEARTMULA_REPO" "$HEARTMULA_DIR"
+echo "🔍 Checking HeartMuLA submodule state..."
+
+# ensure git repo
+if [ ! -d .git ]; then
+    echo "❌ Not a git repository"
+    exit 1
 fi
 
-git submodule sync "$HEARTMULA_DIR"
-git submodule update --init --recursive -- "$HEARTMULA_DIR"
+# case A: already exists physically
+if [ -d "$STUDIO_ROOT/$HEARTMULA_DIR" ]; then
+
+    if [ -d "$STUDIO_ROOT/$HEARTMULA_DIR/.git" ]; then
+        echo "✔️ HeartMuLA already initialized → updating submodule"
+        git submodule update --init --recursive "$HEARTMULA_DIR" || true
+    else
+        echo "⚠️ Folder exists but not a git submodule → reinitializing"
+        rm -rf "$STUDIO_ROOT/$HEARTMULA_DIR"
+        git submodule update --init --recursive "$HEARTMULA_DIR"
+    fi
+
+else
+    echo "⬇️ HeartMuLA missing → cloning clean submodule"
+    git submodule update --init --recursive "$HEARTMULA_DIR" || {
+        echo "⚠️ Submodule update failed → forcing add"
+        git submodule add -f "$HEARTMULA_REPO" "$HEARTMULA_DIR"
+        git submodule update --init --recursive "$HEARTMULA_DIR"
+    }
+fi
 
 # ----------------------------------------------------------------------------------#
-# 2. Symlink HeartMuLA (SAFE)
+# 2. SYMLINK (UNCHANGED)
 # ----------------------------------------------------------------------------------#
+
 HEARTMULA_TARGET="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/HeartMuLa_ComfyUI"
+
+mkdir -p "$(dirname "$HEARTMULA_TARGET")"
 
 if [ ! -L "$HEARTMULA_TARGET" ]; then
     echo "🔗 Linking HeartMuLA..."
@@ -98,30 +120,28 @@ if [ -f "$HEARTMULA_TARGET/requirements.txt" ]; then
 fi
 
 # ----------------------------------------------------------------------------------#
-# 4. ASSETS (HEARTMULA)
+# 4. ASSETS (HEARTMULA - FOLDER MODE)
 # ----------------------------------------------------------------------------------#
 
-# LOAD ENGINE
 source "$STUDIO_ROOT/dev/models-download.sh"
 
 ASSETS=(
     # Core generative model
-    "HeartMuLa/HeartMuLaGen|HeartMuLaGen|HeartMuLa"
+    "HeartMuLa/HeartMuLaGen||checkpoints"
 
-    # Base 3B model (foundation checkpoint)
-    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year|HeartMuLa-oss-3B-happy-new-year|HeartMuLa"
+    # Base 3B model
+    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year||checkpoints"
 
-    # Codec model (audio / latent compression core)
-    "HeartMuLa/HeartCodec-oss-20260123|HeartCodec-oss-20260123|HeartMuLa"
+    # Codec
+    "HeartMuLa/HeartCodec-oss-20260123||audio_encoders"
 
-    # RL fine-tuned 3B model
-    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123|HeartMuLa-RL-oss-3B-20260123|HeartMuLa-RL-oss-3B-20260123"
+    # RL model
+    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123||checkpoints"
 
-    # Transcriptor model (speech / text alignment)
-    "HeartMuLa/HeartTranscriptor-oss|HeartTranscriptor-oss|HeartMuLa"
+    # Transcriptor
+    "HeartMuLa/HeartTranscriptor-oss||text_encoders"
 )
 
-# EXECUTE
 run_assets
 
 # ----------------------------------------------------------------------------------#
