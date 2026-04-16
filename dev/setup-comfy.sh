@@ -50,8 +50,6 @@ echo "⚙️ [COMFY] Init at $COMFY_DIR (Tag: $COMFY_TAG)"
 # Validate required ENV
 : "${COMFY_REPO:?Missing COMFY_REPO}"
 : "${COMFY_DIR:?Missing COMFY_DIR}"
-: "${MANAGER_REPO:?Missing MANAGER_REPO}"
-: "${MANAGER_DIR:?Missing MANAGER_DIR}"
 : "${COMFY_PYTHON_VERSION:?Missing COMFY_PYTHON_VERSION}"
 
 cd "$STUDIO_ROOT"
