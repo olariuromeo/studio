@@ -19,11 +19,6 @@
 	url = https://github.com/kabballa/ComfyUI.git
 	ignore = all
 
-[submodule "apps/ComfyUI-Manager"]
-	path = apps/ComfyUI-Manager
-	url = https://github.com/kabballa/ComfyUI-Manager.git
-	ignore = all
-
 [submodule "apps/ComfyUI-WanVideoWrapper"]
 	path = apps/ComfyUI-WanVideoWrapper
 	url = https://github.com/kijai/ComfyUI-WanVideoWrapper.git

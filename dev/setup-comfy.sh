@@ -161,55 +161,14 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # ----------------------------------------------------------------------------------#
-# 7. Manager Submodule (PINNED VERSION)
+# 7. ComfyUI-Manager (SIMPLE PIP INSTALL)
 # ----------------------------------------------------------------------------------#
-cd "$STUDIO_ROOT"
 
-# 7.1 Register submodule if missing
-if ! grep -q "path = $MANAGER_DIR" .gitmodules 2>/dev/null; then
-    echo "→ Registering Manager..."
-    git submodule add -f "$MANAGER_REPO" "$MANAGER_DIR"
-fi
+echo "📦 Installing ComfyUI-Manager via pip..."
 
-# 7.2 Initialize submodule
-git submodule update --init --recursive -- "$MANAGER_DIR"
+pip install -r manager_requirements.txt
 
-cd "$STUDIO_ROOT/$MANAGER_DIR"
-
-# 7.3 Fetch all tags
-git fetch --all --tags
-
-# 7.4 Validate MANAGER_TAG presence
-if [ -z "${MANAGER_TAG:-}" ]; then
-    echo "❌ MANAGER_TAG is required but not set"
-    exit 1
-fi
-
-# 7.5 Strict tag checkout (no fallback to branch)
-if git show-ref --tags --quiet --verify "refs/tags/$MANAGER_TAG"; then
-    echo "🔒 Using pinned Manager tag: $MANAGER_TAG"
-    git checkout "tags/$MANAGER_TAG" -f
-else
-    echo "❌ Tag $MANAGER_TAG not found in repository"
-    exit 1
-fi
-
-# ----------------------------------------------------------------------------------#
-# 8. Symlink Manager (SAFE)
-# ----------------------------------------------------------------------------------#
-MANAGER_TARGET="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/ComfyUI-Manager"
-
-if [ ! -L "$MANAGER_TARGET" ]; then
-    echo "🔗 Linking Manager..."
-    ln -s "$STUDIO_ROOT/$MANAGER_DIR" "$MANAGER_TARGET"
-fi
-
-# ----------------------------------------------------------------------------------#
-# 9. Manager Requirements
-# ----------------------------------------------------------------------------------#
-if [ -f "$MANAGER_TARGET/requirements.txt" ]; then
-    pip install -r "$MANAGER_TARGET/requirements.txt"
-fi
+echo "✔️ ComfyUI-Manager installed successfully"
 
 # ----------------------------------------------------------------------------------#
 # 9.5. Integrate Sub-Engines (HeartMuLA, Wan2, etc.)
