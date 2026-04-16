@@ -98,56 +98,80 @@ sync_asset() {
     fi
 
     # ----------------------------------------------------------------------------------
-    # 4.2 FILE MODE
+    # 4.2 FILE MODE (FIXED LOGIC: file + symlink separation)
     # ----------------------------------------------------------------------------------
     if [ -n "$path" ]; then
 
-        # 4.2.1 Extract file name from repository path
         local file_name
         file_name="$(basename "$path")"
 
-        # 4.2.2 Resolve final destination path
         local final_target="$base_models/$dest_path"
         local final_dir
         final_dir="$(dirname "$final_target")"
 
         mkdir -p "$final_dir"
 
-        # 4.2.3 Detect existing file anywhere in target directory tree
-        local existing
-        existing=$(find "$final_dir" -type f -name "$file_name" | head -n 1)
+        # ------------------------------------------------------------
+        # 4.2.1 Check REAL FILE (NO DELETE POLICY)
+        # ------------------------------------------------------------
 
-        # 4.2.4 Skip download if already exists
-        if [ -n "$existing" ]; then
-            echo "✔️ SKIP (exists): $existing"
+        local existing_file
+        existing_file=$(find "$base_models" -type f -name "$file_name" | head -n 1)
 
-            # 4.2.6 Normalize location if needed
-            if [ "$existing" != "$final_target" ]; then
-                mv -f "$existing" "$final_target" 2>/dev/null || true
-                echo "📦 NORMALIZED: $final_target"
+        local file_exists=0
+
+        if [ -n "$existing_file" ] && [ -f "$existing_file" ]; then
+
+            # HF safety: accept file ONLY if size > 0 (minimal validity)
+            # IMPORTANT: no deletion allowed
+            local size
+            size=$(stat -c%s "$existing_file" 2>/dev/null || echo 0)
+
+            if [ "$size" -gt 0 ]; then
+                file_exists=1
+            else
+                echo "⚠️ EMPTY FILE DETECTED → WILL RESUME DOWNLOAD"
+                file_exists=0
             fi
-
-            return 0
         fi
 
-        # 4.2.5 Download file from HuggingFace
-        "$HF_BIN" download "$repo" "$path" --local-dir "$final_dir"
+        # ------------------------------------------------------------
+        # 4.2.2 Download ONLY if missing/incomplete
+        # ------------------------------------------------------------
+        if [ "$file_exists" -eq 0 ]; then
+            echo "⬇️ FILE MISSING OR INCOMPLETE → DOWNLOAD: $file_name"
 
-        # resolve actual downloaded file (HF nested structure safe)
-        local found
-        found=$(find "$final_dir" -type f -name "$file_name" | head -n 1)
+            "$HF_BIN" download "$repo" \
+                --include "$path" \
+                --local-dir "$base_models/split_files/$dest_path"
 
-        if [ -z "$found" ]; then
-            echo "❌ FAILED DOWNLOAD: $repo / $path"
-            exit 1
+            existing_file=$(find "$base_models" -type f -name "$file_name" | head -n 1)
+
+            if [ -z "$existing_file" ] || [ ! -f "$existing_file" ]; then
+                echo "❌ DOWNLOAD FAILED: $repo / $path"
+                exit 1
+            fi
+        else
+            echo "✔️ FILE COMPLETE → SKIP DOWNLOAD: $existing_file"
         fi
 
-        # 4.2.6 Move to canonical final location
-        mv -f "$found" "$final_target" 2>/dev/null || true
+        # ------------------------------------------------------------
+        # 4.2.3 SYMLINK (safe idempotent)
+        # ------------------------------------------------------------
+        if [ -L "$final_target" ]; then
+            current_target=$(readlink "$final_target")
+        else
+            current_target=""
+        fi
 
-        echo "✔️ FILE READY: $final_target"
+        if [ "$current_target" != "$existing_file" ]; then
+            echo "🔗 FIXING SYMLINK: $final_target"
+            ln -sfn "$existing_file" "$final_target"
+        else
+            echo "✔️ SYMLINK OK: $final_target"
+        fi
+
         return 0
-    fi
 
     # ----------------------------------------------------------------------------------
     # 4.3 FOLDER MODE (REPO → DEST PATH)
