@@ -6,7 +6,7 @@
 #                                                                                  #
 # ----------------------------------------------------------------------------------#
 # Document: dev/models-download.sh
-# Description: Global Asset Sync Engine (HF + ComfyUI Symlinks)
+# Description: Global Asset Sync Engine (HF → ComfyUI Standard Layout)
 # ----------------------------------------------------------------------------------#
 
 set -euo pipefail
@@ -23,6 +23,8 @@ COMFY_VENV="$STUDIO_ROOT/$COMFY_DIR/venv"
 PIP="$COMFY_VENV/bin/pip"
 PY="$COMFY_VENV/bin/python"
 HF_BIN="$COMFY_VENV/bin/hf"
+
+COMFY_MODELS="$STUDIO_ROOT/$COMFY_DIR/models"
 
 # ----------------------------------------------------------------------------------#
 # 2. HUGGINGFACE CLI BOOTSTRAP
@@ -49,133 +51,163 @@ ensure_hf() {
 }
 
 # ----------------------------------------------------------------------------------#
-# 3. SINGLE ASSET SYNC ENGINE
+# 3. TARGET ROUTER (CRITICAL FOR COMFYUI)
+# ----------------------------------------------------------------------------------#
+
+resolve_target_dir() {
+    local target="$1"
+
+    case "$target" in
+        "vae") echo "$COMFY_MODELS/vae" ;;
+        "clip") echo "$COMFY_MODELS/clip" ;;
+        "text_encoders") echo "$COMFY_MODELS/text_encoders" ;;
+        "audio_encoders") echo "$COMFY_MODELS/audio_encoders" ;;
+        "diffusion_models") echo "$COMFY_MODELS/diffusion_models" ;;
+        "checkpoints") echo "$COMFY_MODELS/checkpoints" ;;
+        "loras") echo "$COMFY_MODELS/loras" ;;
+        *)
+            echo "$COMFY_MODELS/$target"
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------------#
+# 4. SINGLE ASSET SYNC ENGINE (DECLARATIVE DEST PATH SUPPORT)
 # ----------------------------------------------------------------------------------#
 
 sync_asset() {
     local repo="$1"
     local path="$2"
-    local target="$3"
+    local dest_path="$3"
 
-    local storage="$STUDIO_ROOT/data/models/$target"
-    local file_name
-    file_name="$(basename "$path")"
-
-    mkdir -p "$storage"
+    local base_models="$COMFY_MODELS"
 
     echo "------------------------------------------------------------"
     echo "⬇️ DOWNLOAD ASSET"
     echo "Repo   : $repo"
     echo "Path   : $path"
-    echo "Target : $target"
-    echo "File   : $file_name"
+    echo "Dest   : $dest_path"
     echo "------------------------------------------------------------"
 
-    # 3.1 SKIP IF EXISTS
-    if [ -f "$storage/$file_name" ]; then
-        echo "✔️ SKIP (exists): $file_name"
-        return 0
-    fi
-
-    # 3.2 DOWNLOAD (FOLDER MODE - DECLARATIVE)
-
-    if [ -z "$path" ] || [ "$path" = "" ]; then
-        echo "📦 FOLDER MODE DETECTED"
-
-        # 3.2.1 Extract repository folder name (source name)
-        local folder_name
-        folder_name="$(basename "$repo")"
-
-        # 3.2.2 Define storage path (internal cache)
-        local storage_dir="$STUDIO_ROOT/data/models/$folder_name"
-
-        # 3.2.3 Download if missing
-        if [ -d "$storage_dir" ]; then
-            echo "✔️ SKIP (exists): $folder_name"
-        else
-            "$HF_BIN" download "$repo" --local-dir "$storage_dir"
-            echo "✔️ DOWNLOADED: $storage_dir"
-        fi
-
-        # 3.2.4 Resolve destination path (FULLY DECLARED)
-        local base_models="$STUDIO_ROOT/$COMFY_DIR/models"
-        local final_target="$base_models/$dest_path"
-
-        # 3.2.5 ROOT MERGE MODE (dest ends with '/.')
-        if [[ "$dest_path" == */. ]]; then
-            local root_dir
-            root_dir="$(dirname "$final_target")"
-
-            mkdir -p "$root_dir"
-
-            for f in "$storage_dir"/*; do
-                local name
-                name="$(basename "$f")"
-
-                rm -rf "$root_dir/$name"
-                ln -sfn "$f" "$root_dir/$name"
-            done
-
-            echo "🔗 MERGED INTO: $root_dir"
-            return 0
-        fi
-
-        # 3.2.6 NORMAL LINK MODE
-        mkdir -p "$(dirname "$final_target")"
-
-        rm -rf "$final_target"
-        ln -sfn "$storage_dir" "$final_target"
-
-        # 3.2.7 Validate
-        if [ ! -d "$storage_dir" ]; then
-            echo "❌ DOWNLOAD FAILED: $storage_dir"
-            exit 1
-        fi
-
-        echo "🔗 LINKED: $final_target"
-
-        return 0
-    fi
-
-    # FILE MODE
-    "$HF_BIN" download "$repo" "$path" --local-dir "$storage"
-
-    # 3.3 RESOLVE FILE (FLATTEN GUARANTEE)
-    local file
-    file=$(find "$storage" -type f -name "$file_name" | head -n 1)
-
-    if [ -z "$file" ]; then
-        echo "❌ FAILED: $repo / $path"
+    # ----------------------------------------------------------------------------------
+    # 4.1 VALIDATION
+    # ----------------------------------------------------------------------------------
+    if [ -z "$repo" ] || [ -z "$dest_path" ]; then
+        echo "❌ INVALID INPUT"
         exit 1
     fi
 
-    # 3.4 FLATTEN STORAGE (COOZILA STANDARD)
-    local final_file="$storage/$file_name"
+    # ----------------------------------------------------------------------------------
+    # 4.2 FILE MODE
+    # ----------------------------------------------------------------------------------
+    if [ -n "$path" ]; then
 
-    if [ "$file" != "$final_file" ]; then
-        mv -f "$file" "$final_file"
+        # 4.2.1 Extract file name from repository path
+        local file_name
+        file_name="$(basename "$path")"
+
+        # 4.2.2 Resolve final destination path
+        local final_target="$base_models/$dest_path"
+        local final_dir
+        final_dir="$(dirname "$final_target")"
+
+        mkdir -p "$final_dir"
+
+        # 4.2.3 Detect existing file anywhere in target directory tree
+        local existing
+        existing=$(find "$final_dir" -type f -name "$file_name" | head -n 1)
+
+        # 4.2.4 Skip download if already exists
+        if [ -n "$existing" ]; then
+            echo "✔️ SKIP (exists): $existing"
+
+            # 4.2.6 Normalize location if needed
+            if [ "$existing" != "$final_target" ]; then
+                mv -f "$existing" "$final_target" 2>/dev/null || true
+                echo "📦 NORMALIZED: $final_target"
+            fi
+
+            return 0
+        fi
+
+        # 4.2.5 Download file from HuggingFace
+        "$HF_BIN" download "$repo" "$path" --local-dir "$final_dir"
+
+        # resolve actual downloaded file (HF nested structure safe)
+        local found
+        found=$(find "$final_dir" -type f -name "$file_name" | head -n 1)
+
+        if [ -z "$found" ]; then
+            echo "❌ FAILED DOWNLOAD: $repo / $path"
+            exit 1
+        fi
+
+        # 4.2.6 Move to canonical final location
+        mv -f "$found" "$final_target" 2>/dev/null || true
+
+        echo "✔️ FILE READY: $final_target"
+        return 0
     fi
 
-    file="$final_file"
+    # ----------------------------------------------------------------------------------
+    # 4.3 FOLDER MODE (REPO → DEST PATH)
+    # ----------------------------------------------------------------------------------
 
-    echo "✔️ DOWNLOADED: $file"
+    local repo_name
+    repo_name="$(basename "$repo")"
 
-    # 3.5 LINK INTO COMFYUI
-    local link_dir="$STUDIO_ROOT/$COMFY_DIR/models/$target"
-    mkdir -p "$link_dir"
+    local cache_dir="$STUDIO_ROOT/data/models/$repo_name"
 
-    ln -sfn "$file" "$link_dir/$file_name"
+    # 4.3.1 Download repo
+    if [ -d "$cache_dir" ]; then
+        echo "✔️ SKIP CACHE: $repo_name"
+    else
+        "$HF_BIN" download "$repo" --local-dir "$cache_dir"
+        echo "✔️ DOWNLOADED REPO: $cache_dir"
+    fi
 
-    echo "🔗 LINKED: $target/$file_name"
+    local final_target="$base_models/$dest_path"
+
+    # ----------------------------------------------------------------------------------
+    # 4.4 ROOT MERGE MODE (IMPORTANT FOR HeartMuLaGen)
+    # ex: HeartMuLa/.
+    # ----------------------------------------------------------------------------------
+    if [[ "$dest_path" == */. ]]; then
+        local root_dir
+        root_dir="$(dirname "$final_target")"
+
+        mkdir -p "$root_dir"
+
+        for f in "$cache_dir"/*; do
+            local name
+            name="$(basename "$f")"
+
+            rm -rf "$root_dir/$name"
+            ln -sfn "$f" "$root_dir/$name"
+        done
+
+        echo "🔗 MERGED ROOT: $root_dir"
+        return 0
+    fi
+
+    # ----------------------------------------------------------------------------------
+    # 4.5 NORMAL FOLDER LINK (WITH RENAME)
+    # ----------------------------------------------------------------------------------
+
+    mkdir -p "$(dirname "$final_target")"
+
+    rm -rf "$final_target"
+    ln -sfn "$cache_dir" "$final_target"
+
+    echo "🔗 LINKED: $final_target"
 }
 
 # ----------------------------------------------------------------------------------#
-# 4. RUNNER (GLOBAL ENTRYPOINT)
+# 5. RUNNER
 # ----------------------------------------------------------------------------------#
 
 run_assets() {
 
-    # 4.1 VALIDATION
     if [ -z "${ASSETS+x}" ]; then
         echo "❌ ASSETS not defined"
         exit 1
@@ -186,23 +218,21 @@ run_assets() {
         exit 1
     fi
 
-    # 4.2 INIT HF
     ensure_hf
 
     echo "============================================================"
     echo "🚀 COOZILA GLOBAL ASSET ENGINE START"
     echo "============================================================"
 
-    # 4.3 EXECUTION LOOP
     for item in "${ASSETS[@]}"; do
-        IFS="|" read -r repo path target <<< "$item"
+        IFS="|" read -r repo path dest_path <<< "$item"
 
-        if [ -z "$repo" ] || [ -z "$target" ]; then
+        if [ -z "$repo" ] || [ -z "$dest_path" ]; then
             echo "⚠️ INVALID ASSET ENTRY: $item"
             continue
         fi
 
-        sync_asset "$repo" "$path" "$target"
+        sync_asset "$repo" "$path" "$dest_path"
     done
 
     echo "============================================================"
@@ -211,6 +241,5 @@ run_assets() {
 }
 
 # ----------------------------------------------------------------------------------#
-# 5. EXPORT
+# 6. EXPORT
 # ----------------------------------------------------------------------------------#
-# intended to be sourced by modules

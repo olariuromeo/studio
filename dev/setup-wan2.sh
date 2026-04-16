@@ -90,23 +90,23 @@ fi
 source "$STUDIO_ROOT/dev/models-download.sh"
 
 ASSETS=(
-    # Core VAE (reconstruction engine)
+    # WAN 2.2 diffusion model
+    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors|diffusion_models"
+
+    # WAN 2.1 VAE
     "Comfy-Org/Wan_2.1_ComfyUI_repackaged|split_files/vae/wan_2.1_vae.safetensors|vae"
 
-    # Text encoder (UMT5 XXL FP8 optimized)
+    # WAN 2.1 text encoder
     "Comfy-Org/Wan_2.1_ComfyUI_repackaged|split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors|text_encoders"
 
-    # CLIP-L encoder (shared diffusion backbone)
+    # FLUX CLIP
     "comfyanonymous/flux_text_encoders|clip_l.safetensors|clip"
 
-    # Diffusion model (Wan 2.2 S2V 14B FP8)
-    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors|checkpoints"
-
-    # Audio encoder (Wav2Vec2 large English FP16)
-    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors|audio_encoders"
-
-    # LoRA adapter (light x2v 4-step high-noise)
+    # WAN 2.2 LoRA motion extension
     "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors|loras"
+
+    # WAN audio encoder
+    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors|audio_encoders"
 )
 
 # EXECUTE

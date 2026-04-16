@@ -161,16 +161,38 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # ----------------------------------------------------------------------------------#
-# 7. Manager Submodule
+# 7. Manager Submodule (PINNED VERSION)
 # ----------------------------------------------------------------------------------#
 cd "$STUDIO_ROOT"
 
+# 7.1 Register submodule if missing
 if ! grep -q "path = $MANAGER_DIR" .gitmodules 2>/dev/null; then
     echo "→ Registering Manager..."
     git submodule add -f "$MANAGER_REPO" "$MANAGER_DIR"
 fi
 
+# 7.2 Initialize submodule
 git submodule update --init --recursive -- "$MANAGER_DIR"
+
+cd "$STUDIO_ROOT/$MANAGER_DIR"
+
+# 7.3 Fetch all tags
+git fetch --all --tags
+
+# 7.4 Validate MANAGER_TAG presence
+if [ -z "${MANAGER_TAG:-}" ]; then
+    echo "❌ MANAGER_TAG is required but not set"
+    exit 1
+fi
+
+# 7.5 Strict tag checkout (no fallback to branch)
+if git show-ref --tags --quiet --verify "refs/tags/$MANAGER_TAG"; then
+    echo "🔒 Using pinned Manager tag: $MANAGER_TAG"
+    git checkout "tags/$MANAGER_TAG" -f
+else
+    echo "❌ Tag $MANAGER_TAG not found in repository"
+    exit 1
+fi
 
 # ----------------------------------------------------------------------------------#
 # 8. Symlink Manager (SAFE)

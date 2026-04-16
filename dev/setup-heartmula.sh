@@ -126,17 +126,20 @@ fi
 source "$STUDIO_ROOT/dev/models-download.sh"
 
 ASSETS=(
-    # ROOT FILES (explode în root)
-    "HeartMuLa/HeartMuLaGen|HeartMuLa/."
+    # ROOT FILES (gen_config + tokenizer)
+    "HeartMuLa/HeartMuLaGen||HeartMuLa/."
 
-    # MODELS (cu rename + structură corectă)
-    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year|HeartMuLa/HeartMuLa-oss-3B"
+    # Base model (rename)
+    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year||HeartMuLa/HeartMuLa-oss-3B"
 
-    "HeartMuLa/HeartCodec-oss-20260123|HeartMuLa/HeartCodec-oss"
+    # Codec (rename)
+    "HeartMuLa/HeartCodec-oss-20260123||HeartMuLa/HeartCodec-oss"
 
-    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123|HeartMuLa/HeartMuLa-RL-oss-3B"
+    # RL (rename)
+    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123||HeartMuLa/HeartMuLa-RL-oss-3B"
 
-    "HeartMuLa/HeartTranscriptor-oss|HeartMuLa/HeartTranscriptor-oss"
+    # Transcriptor
+    "HeartMuLa/HeartTranscriptor-oss||HeartMuLa/HeartTranscriptor-oss"
 )
 
 run_assets
