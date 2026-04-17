@@ -130,13 +130,13 @@ ASSETS=(
     "HeartMuLa/HeartMuLaGen||HeartMuLa/."
 
     # Base model (rename)
-    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year||HeartMuLa/HeartMuLa-oss-3B"
+    "HeartMuLa/HeartMuLa-oss-3B-happy-new-year||HeartMuLa-oss-3B-happy-new-year"
 
     # Codec (rename)
-    "HeartMuLa/HeartCodec-oss-20260123||HeartMuLa/HeartCodec-oss"
+    "HeartMuLa/HeartCodec-oss-20260123||HeartMuLa/HeartCodec-oss-20260123"
 
     # RL (rename)
-    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123||HeartMuLa/HeartMuLa-RL-oss-3B"
+    "HeartMuLa/HeartMuLa-RL-oss-3B-20260123||HeartMuLa-RL-oss-3B-20260123"
 
     # Transcriptor
     "HeartMuLa/HeartTranscriptor-oss||HeartMuLa/HeartTranscriptor-oss"
