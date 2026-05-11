@@ -21,7 +21,7 @@
 
 [submodule "apps/ComfyUI-Manager"]
 	path = apps/ComfyUI-Manager
-	url = https://github.com/Comfy-Org/ComfyUI-Manager.git
+	url = https://github.com/Comfy-Org/ComfyUI-Manager
 	ignore = all
 
 [submodule "apps/ComfyUI-WanVideoWrapper"]
