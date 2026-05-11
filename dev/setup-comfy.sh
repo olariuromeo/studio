@@ -151,15 +151,16 @@ echo "🧠 CUDA_TAG: $CUDA_TAG"
 INSTALL_OK=false
 
 if pip install \
-    "torch>=2.8.0" \
-    "torchvision>=0.23.0" \
-    "torchaudio>=2.8.0" \
-    --index-url "https://download.pytorch.org/whl/$CUDA_TAG" \
+    "torch==2.8.0+cu126" \
+    "torchvision==0.23.0+cu126" \
+    "torchaudio==2.8.0+cu126" \
+    "triton==3.4.0" \
+    --index-url "https://download.pytorch.org/whl/cu126" \
     --no-cache-dir \
     --pre; then
 
     INSTALL_OK=true
-    echo "✅ PyTorch >=2.8 CUDA install OK"
+    echo "✅ PyTorch 2.8 CUDA 12.6 stack install OK"
 fi
 
 if [ "$INSTALL_OK" = false ]; then
@@ -203,7 +204,7 @@ fi
 
 
 # ----------------------------------------------------------------------------------#
-# 7. FRAMEWORK LAYER (FLASH-ATTN BUILD FIXED FOR TORCH 2.8+ / CUDA)
+# 7. FLASH-ATTN (SOURCE BUILD ONLY - CLEAN INSTALL FLOW)
 # ----------------------------------------------------------------------------------#
 
 echo "📦 Installing framework extensions (flash-attn build from source)..."
@@ -247,7 +248,6 @@ print("FlashAttention OK")
 print("Torch:", torch.__version__)
 print("CUDA:", torch.version.cuda)
 EOF
-
 
 # ----------------------------------------------------------------------------------#
 # 8. Manager Submodule (PINNED VERSION)
