@@ -96,129 +96,268 @@ echo "📦 Creating new virtual environment..."
 $PYTHON_BIN -m venv venv
 source venv/bin/activate
 
-pip install --upgrade pip
+pip install --upgrade pip setuptools wheel ninja
 
 # ----------------------------------------------------------------------------------#
-# 4. GPU Detection & Descending Version Discovery
+# 4. GPU & CUDA Validation + Environment Fix (SSH SAFE)
 # ----------------------------------------------------------------------------------#
-if command -v nvidia-smi &> /dev/null; then
-    echo "✔️ NVIDIA GPU detected"
+
+echo "🔧 Checking NVIDIA driver..."
+
+if ! command -v nvidia-smi &> /dev/null; then
+    echo "❌ NVIDIA driver missing"
+    exit 1
+fi
+
+nvidia-smi
+
+echo "🔧 CUDA environment bootstrap..."
+
+# 4.1 Detect CUDA (single source of truth)
+if [ -x /usr/local/cuda/bin/nvcc ]; then
+    export CUDA_HOME=/usr/local/cuda
 else
-    echo "❌ No NVIDIA GPU detected. Terminating (Strict Dev Mode)."
+    echo "❌ CUDA toolkit not found at /usr/local/cuda"
     exit 1
 fi
 
-# 1. PRIMARY TARGET (Admin Input from .env)
-ADMIN_CUDA_TAG="cu$(echo ${CUDA_VERSION} | sed 's/\.//')"
-echo "🧠 Primary target (Admin Input): $ADMIN_CUDA_TAG"
+export PATH="$CUDA_HOME/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
 
-# 2. DISCOVERY LIST (Descending order for fallback)
-# We start from 12.6 down to 12.1 to find the newest available stable build
-STABLE_FALLBACKS=("$ADMIN_CUDA_TAG" "cu126" "cu125" "cu124" "cu121" "cu130")
+echo "✔️ CUDA_HOME=$CUDA_HOME"
 
-INSTALLED=false
-
-for TAG in "${STABLE_FALLBACKS[@]}"; do
-    echo "🔍 Attempting installation for: $TAG..."
-    
-    # Using --quiet to keep logs clean during discovery, but showing errors if it's the last attempt
-    if pip install torch torchvision torchaudio \
-        --index-url "https://download.pytorch.org/whl/$TAG" \
-        --extra-index-url "https://pypi.org/simple" --no-cache-dir; then
-        echo "✅ Successfully installed PyTorch using $TAG"
-        INSTALLED=true
-        break
-    else
-        echo "⚠️  $TAG build not found on PyTorch servers. Trying next..."
-    fi
-done
-
-if [ "$INSTALLED" = false ]; then
-    echo "❌ Critical Error: Could not find a compatible PyTorch build for any targeted CUDA version."
+# 4.2 Validate nvcc
+if ! command -v nvcc &> /dev/null; then
+    echo "❌ nvcc not accessible after PATH fix"
     exit 1
 fi
 
+nvcc --version
+echo "✔️ nvcc path: $(which nvcc)"
+
 # ----------------------------------------------------------------------------------#
-# 5. Validate Torch
+# 4.3 PyTorch (SINGLE SOURCE OF TRUTH INSTALL)
 # ----------------------------------------------------------------------------------#
-echo "🧪 Validating PyTorch..."
+
+echo "🔍 Installing PyTorch..."
+
+if [ -z "${CUDA_TAG:-}" ]; then
+    echo "❌ CUDA_TAG missing"
+    exit 1
+fi
+
+echo "🧠 CUDA_TAG: $CUDA_TAG"
+
+INSTALL_OK=false
+
+if pip install \
+    "torch>=2.8.0" \
+    "torchvision>=0.23.0" \
+    "torchaudio>=2.8.0" \
+    --index-url "https://download.pytorch.org/whl/$CUDA_TAG" \
+    --no-cache-dir \
+    --pre; then
+
+    INSTALL_OK=true
+    echo "✅ PyTorch >=2.8 CUDA install OK"
+fi
+
+if [ "$INSTALL_OK" = false ]; then
+    echo "⚠️ fallback → CPU PyTorch"
+
+    pip install torch torchvision torchaudio \
+        --index-url "https://download.pytorch.org/whl/cpu" \
+        --no-cache-dir
+fi
+
+# ----------------------------------------------------------------------------------#
+# 4.4 PYTORCH + CUDA FULL TEST (AICI ESTE LOCUL CORECT)
+# ----------------------------------------------------------------------------------#
+
+echo "🧪 PyTorch CUDA deep validation..."
 
 python - <<EOF
 import torch
-print("Torch version:", torch.__version__)
+
+print("Torch:", torch.__version__)
+print("CUDA:", torch.version.cuda)
 print("CUDA available:", torch.cuda.is_available())
+
+if torch.cuda.is_available():
+    x = torch.randn(1).cuda()
+    print("CUDA tensor test OK:", x)
+else:
+    print("⚠️ CUDA not available")
 EOF
 
-# ----------------------------------------------------------------------------------#
-# 6. Requirements
-# ----------------------------------------------------------------------------------#
-echo "📦 Installing requirements..."
 
-if [ -f "requirements.txt" ]; then
+# ----------------------------------------------------------------------------------#
+# 6. CORE REQUIREMENTS
+# ----------------------------------------------------------------------------------#
+
+echo "📦 Installing base requirements..."
+
+if [ -f requirements.txt ]; then
     pip install -r requirements.txt
 fi
 
-# ----------------------------------------------------------------------------------#
-# 7. ComfyUI-Manager (SIMPLE PIP INSTALL)
-# ----------------------------------------------------------------------------------#
-
-echo "📦 Installing ComfyUI-Manager via pip..."
-
-pip install -r manager_requirements.txt
-
-echo "✔️ ComfyUI-Manager installed successfully"
 
 # ----------------------------------------------------------------------------------#
-# 9.5. Integrate Sub-Engines (HeartMuLA, Wan2, etc.)
+# 7. FRAMEWORK LAYER (FLASH-ATTN BUILD FIXED FOR TORCH 2.8+ / CUDA)
 # ----------------------------------------------------------------------------------#
-# ANSI Colors for professional logging
-BLUE='\033[0;34m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
 
-echo -e "\n${BLUE}🔌 Injecting Custom Node Engines...${NC}"
+echo "📦 Installing framework extensions (flash-attn build from source)..."
 
-# Define local run_step to maintain execution flow and reporting
+python - <<EOF
+import torch
+
+if not torch.cuda.is_available():
+    print("⚠️ CUDA not available → skipping flash-attn")
+    exit(0)
+
+print("Torch:", torch.__version__)
+print("CUDA:", torch.version.cuda)
+EOF
+
+# FORCE build deps (needed for compiling against your exact torch)
+pip install -U ninja packaging setuptools wheel
+
+# FORCE SOURCE BUILD (critical fix)
+export TORCH_CUDA_ARCH_LIST="8.6"
+
+CPU_HALF=$(($(nproc) / 2))
+if [ "$CPU_HALF" -lt 1 ]; then
+    CPU_HALF=1
+fi
+
+export MAX_JOBS=$CPU_HALF
+
+pip install flash-attn \
+    --no-build-isolation \
+    --no-cache-dir \
+    --no-binary flash-attn
+
+echo "🧪 Validating flash-attn..."
+
+python - <<EOF
+import torch
+import flash_attn
+
+print("FlashAttention OK")
+print("Torch:", torch.__version__)
+print("CUDA:", torch.version.cuda)
+EOF
+
+
+# ----------------------------------------------------------------------------------#
+# 8. Manager Submodule (PINNED VERSION)
+# ----------------------------------------------------------------------------------#
+cd "$STUDIO_ROOT"
+
+# 8.1 Register submodule if missing
+if ! grep -q "path = $MANAGER_DIR" .gitmodules 2>/dev/null; then
+    echo "→ Registering Manager..."
+    git submodule add -f "$MANAGER_REPO" "$MANAGER_DIR"
+fi
+
+# 8.2 Initialize submodule
+git submodule update --init --recursive -- "$MANAGER_DIR"
+
+cd "$STUDIO_ROOT/$MANAGER_DIR"
+
+# 8.3 Fetch all tags
+git fetch --all --tags
+
+# 8.4 Validate MANAGER_TAG presence
+if [ -z "${MANAGER_TAG:-}" ]; then
+    echo "❌ MANAGER_TAG is required but not set"
+    exit 1
+fi
+
+# 8.5 Strict tag checkout (no fallback to branch)
+if git show-ref --tags --quiet --verify "refs/tags/$MANAGER_TAG"; then
+    echo "🔒 Using pinned Manager tag: $MANAGER_TAG"
+    git checkout "tags/$MANAGER_TAG" -f
+else
+    echo "❌ Tag $MANAGER_TAG not found in repository"
+    exit 1
+fi
+
+# 8.6 Symlink Manager (SAFE)
+MANAGER_TARGET="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/comfyui-manager"
+
+if [ ! -L "$MANAGER_TARGET" ]; then
+    echo "🔗 Linking Manager..."
+    ln -s "$STUDIO_ROOT/$MANAGER_DIR" "$MANAGER_TARGET"
+fi
+
+# ----------------------------------------------------------------------------------#
+# 8.7 Manager Requirements
+# ----------------------------------------------------------------------------------#
+if [ -f "$MANAGER_TARGET/requirements.txt" ]; then
+    pip install -r "$MANAGER_TARGET/requirements.txt"
+fi
+
+
+# ----------------------------------------------------------------------------------#
+# 9. MODULE ENGINE REGISTRY (EXECUTION LAYER)
+# ----------------------------------------------------------------------------------#
+
+echo "🔌 Running module engines..."
+
 run_step() {
-    local script_path=$1
-    local step_name=$2
-    
-    echo -e "🚀 [EXECUTING] $step_name..."
-    
-    if [ -f "$script_path" ]; then
-        chmod +x "$script_path"
-        # Execute the sub-provisioner
-        if bash "$script_path"; then
-            echo -e "${GREEN}✅ $step_name: SUCCESS${NC}"
-        else
-            echo -e "${RED}❌ $step_name: FAILED${NC}"
-            return 1
-        fi
-    else
-        echo -e "${RED}❌ $step_name: FAILED (File not found at $script_path)${NC}"
+    local script=$1
+    local name=$2
+
+    echo "▶ $name"
+
+    if [ ! -f "$script" ]; then
+        echo "⚠️ missing: $script"
         return 1
+    fi
+
+    chmod +x "$script"
+
+    (
+        export PYTHONNOUSERSITE=1
+        bash "$script"
+    )
+
+    local status=$?
+
+    if [ $status -ne 0 ]; then
+        echo "❌ ENGINE FAILED: $name"
+        return $status
     fi
 }
 
-# --- MODULE SELECTION ---
-# Comment out with '#' the engines you do not wish to install/update
-run_step "$STUDIO_ROOT/dev/setup-wan2.sh" "Wan 2.2 Engine"
-run_step "$STUDIO_ROOT/dev/setup-heartmula.sh" "HeartMuLA Integration"
-
-# 2. DOWNLOAD ENGINE
-run_step "$STUDIO_ROOT/dev/models-download.sh" "Global Asset Download"
-# Future modules can be added here:
-# run_step "$STUDIO_ROOT/dev/setup-example.sh" "Example Engine"
+run_step "$STUDIO_ROOT/dev/setup-wan2.sh" "Wan Engine"
+# run_step "$STUDIO_ROOT/dev/setup-heartmula.sh" "HeartMuLA Engine"
 
 # ----------------------------------------------------------------------------------#
-# 10. Finalize
+# 10. SYSTEM VALIDATION
+# ----------------------------------------------------------------------------------#
+
+echo "🧪 System validation..."
+
+python - <<EOF
+import torch
+
+print("Torch:", torch.__version__)
+print("CUDA available:", torch.cuda.is_available())
+
+if torch.cuda.is_available():
+    print("GPU:", torch.cuda.get_device_name(0))
+EOF
+
+# ----------------------------------------------------------------------------------#
+# 11. Finalize
 # ----------------------------------------------------------------------------------#
 
 echo "✅ COMFY setup complete!"
 
 # ----------------------------------------------------------------------------------#
-# 11. START COMFYUI
+# 12. START COMFYUI
 # ----------------------------------------------------------------------------------#
 echo "🚀 Starting ComfyUI (RTX 3080 Optimized)..."
 

@@ -100,7 +100,7 @@ echo "✅ Environment is sterile. Starting fresh deployment..."
 # ----------------------------------------------------------------------------------#
 run_step "./dev/setup-webui.sh" "WebUI Base Layer"
 run_step "./dev/setup-studio.sh" "Studio Integration"
-run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"
+#run_step "./dev/setup-comfy.sh" "Backend Engine (ComfyUI)"
 
 # ----------------------------------------------------------------------------------#
 # 6. PHASE 2: FRONTEND ENGINE

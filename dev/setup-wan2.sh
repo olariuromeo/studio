@@ -61,6 +61,7 @@ fi
 
 $VENV_PIP install onnx onnxruntime-gpu sageattention matrix-nio --no-cache-dir
 
+
 # ----------------------------------------------------------------------------------#
 # 3. WRAPPER LINK
 # ----------------------------------------------------------------------------------#
@@ -82,6 +83,9 @@ if ! grep -q "COMFY_ARGS" "$ENV_FILE"; then
     echo 'COMFY_ARGS="--lowvram --fp8_e4m3fn-text-enc --fast-lowvram --preview-method auto"' >> "$ENV_FILE"
 fi
 
+# Plugins
+pip install rotary-embedding-torch imageio-ffmpeg
+
 # ----------------------------------------------------------------------------------#
 # 7. ASSETS (WAN 2.2)
 # ----------------------------------------------------------------------------------#
@@ -92,6 +96,7 @@ source "$STUDIO_ROOT/dev/models-download.sh"
 ASSETS=(
     # WAN 2.2 diffusion model
     "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/diffusion_models/wan2.2_s2v_14B_fp8_scaled.safetensors|diffusion_models"
+    "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/diffusion_models/wan2.2_s2v_14B_bf16.safetensors|diffusion_models"
 
     # WAN 2.1 VAE
     "Comfy-Org/Wan_2.1_ComfyUI_repackaged|split_files/vae/wan_2.1_vae.safetensors|vae"
@@ -108,6 +113,8 @@ ASSETS=(
     # WAN audio encoder
     "Comfy-Org/Wan_2.2_ComfyUI_Repackaged|split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors|audio_encoders"
 )
+
+export ASSETS
 
 # EXECUTE
 run_assets
