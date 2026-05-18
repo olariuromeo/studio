@@ -41,7 +41,7 @@ ensure_hf() {
     echo "⬇️ Installing huggingface_hub..."
 
     "$PIP" install --upgrade pip --no-cache-dir
-    "$PIP" install huggingface_hub --no-cache-dir
+    "$PIP" install huggingface_hub==0.24.6 --no-cache-dir
 
     if [ ! -x "$HF_BIN" ]; then
         HF_BIN="$PY -m huggingface_hub"

@@ -96,7 +96,7 @@ echo "📦 Creating new virtual environment..."
 $PYTHON_BIN -m venv venv
 source venv/bin/activate
 
-pip install --upgrade pip setuptools wheel ninja
+pip install -U pip packaging wheel ninja "setuptools<82"
 
 # ----------------------------------------------------------------------------------#
 # 4. GPU & CUDA Validation + Environment Fix (SSH SAFE)
@@ -139,36 +139,34 @@ echo "✔️ nvcc path: $(which nvcc)"
 # 4.3 PyTorch (SINGLE SOURCE OF TRUTH INSTALL)
 # ----------------------------------------------------------------------------------#
 
-echo "🔍 Installing PyTorch..."
+echo "Installing PyTorch..."
 
 if [ -z "${CUDA_TAG:-}" ]; then
     echo "❌ CUDA_TAG missing"
     exit 1
 fi
 
-echo "🧠 CUDA_TAG: $CUDA_TAG"
+echo "CUDA_TAG: $CUDA_TAG"
 
-INSTALL_OK=false
+set +e
 
-if pip install \
-    "torch==2.8.0+cu126" \
-    "torchvision==0.23.0+cu126" \
-    "torchaudio==2.8.0+cu126" \
-    "triton==3.4.0" \
+pip install \
+    torch==2.8.0+cu126 \
+    torchvision==0.23.0+cu126 \
+    torchaudio==2.8.0+cu126 \
+    triton==3.4.0 \
     --index-url "https://download.pytorch.org/whl/cu126" \
     --no-cache-dir \
-    --pre; then
+    --pre
 
-    INSTALL_OK=true
-    echo "✅ PyTorch 2.8 CUDA 12.6 stack install OK"
-fi
+STATUS=$?
+set -e
 
-if [ "$INSTALL_OK" = false ]; then
-    echo "⚠️ fallback → CPU PyTorch"
-
-    pip install torch torchvision torchaudio \
-        --index-url "https://download.pytorch.org/whl/cpu" \
-        --no-cache-dir
+if [ $STATUS -eq 0 ]; then
+    echo "✅ PyTorch CUDA stack install OK"
+else
+    echo "❌ PyTorch install failed"
+    exit 1
 fi
 
 # ----------------------------------------------------------------------------------#
@@ -202,6 +200,13 @@ if [ -f requirements.txt ]; then
     pip install -r requirements.txt
 fi
 
+# 6.1 ComfyUI-Manager dependencies (RUN ONLY)
+
+echo "📦 Installing ComfyUI-Manager dependencies..."
+
+if [ -f manager_requirements.txt ]; then
+    pip install -r manager_requirements.txt
+fi
 
 # ----------------------------------------------------------------------------------#
 # 7. FLASH-ATTN (SOURCE BUILD ONLY - CLEAN INSTALL FLOW)
@@ -211,17 +216,15 @@ echo "📦 Installing framework extensions (flash-attn build from source)..."
 
 python - <<EOF
 import torch
-
-if not torch.cuda.is_available():
-    print("⚠️ CUDA not available → skipping flash-attn")
-    exit(0)
+try:
+    import flash_attn
+    print("FlashAttention OK")
+except ImportError:
+    print("FlashAttention NOT INSTALLED")
 
 print("Torch:", torch.__version__)
 print("CUDA:", torch.version.cuda)
 EOF
-
-# FORCE build deps (needed for compiling against your exact torch)
-pip install -U ninja packaging setuptools wheel
 
 # FORCE SOURCE BUILD (critical fix)
 export TORCH_CUDA_ARCH_LIST="8.6"
@@ -250,50 +253,65 @@ print("CUDA:", torch.version.cuda)
 EOF
 
 # ----------------------------------------------------------------------------------#
-# 8. Manager Submodule (PINNED VERSION)
+# 8. Manager Submodule Setup
 # ----------------------------------------------------------------------------------#
+
 cd "$STUDIO_ROOT"
 
-# 8.1 Register submodule if missing
-if ! grep -q "path = $MANAGER_DIR" .gitmodules 2>/dev/null; then
-    echo "→ Registering Manager..."
-    git submodule add -f "$MANAGER_REPO" "$MANAGER_DIR"
+echo "🔧 Setting up ComfyUI Manager..."
+
+# 8.1 Ensure submodule exists
+if [ ! -d "$MANAGER_DIR/.git" ]; then
+    echo "→ Adding Manager submodule..."
+    git submodule add -f "$MANAGER_REPO" "$MANAGER_DIR" || true
 fi
 
-# 8.2 Initialize submodule
+# 8.2 Init / update submodule
 git submodule update --init --recursive -- "$MANAGER_DIR"
 
 cd "$STUDIO_ROOT/$MANAGER_DIR"
 
-# 8.3 Fetch all tags
-git fetch --all --tags
+git fetch --all --tags || true
 
-# 8.4 Validate MANAGER_TAG presence
-if [ -z "${MANAGER_TAG:-}" ]; then
-    echo "❌ MANAGER_TAG is required but not set"
-    exit 1
-fi
+# 8.3 Resolve ref (default main)
+MANAGER_REF="${MANAGER_REF:-main}"
 
-# 8.5 Strict tag checkout (no fallback to branch)
-if git show-ref --tags --quiet --verify "refs/tags/$MANAGER_TAG"; then
-    echo "🔒 Using pinned Manager tag: $MANAGER_TAG"
-    git checkout "tags/$MANAGER_TAG" -f
+echo "📌 Manager ref: $MANAGER_REF"
+
+# 8.4 Discover available refs
+git branch -r | sed 's/origin\///g' > /tmp/branches.txt || true
+git tag > /tmp/tags.txt || true
+
+# 8.5 Resolve checkout (tag → branch → main fallback)
+
+if git show-ref --verify --quiet "refs/tags/$MANAGER_REF"; then
+    echo "🔒 Using tag: $MANAGER_REF"
+    git checkout "tags/$MANAGER_REF" -f
+
+elif git show-ref --verify --quiet "refs/heads/$MANAGER_REF"; then
+    echo "🌿 Using branch: $MANAGER_REF"
+    git checkout "$MANAGER_REF" -f
+
+elif git show-ref --verify --quiet "refs/remotes/origin/$MANAGER_REF"; then
+    echo "🌿 Using remote branch: $MANAGER_REF"
+    git checkout "$MANAGER_REF" -f
+
 else
-    echo "❌ Tag $MANAGER_TAG not found in repository"
-    exit 1
+    echo "⚠️ Invalid ref → fallback main"
+    git checkout main -f
 fi
 
-# 8.6 Symlink Manager (SAFE)
-MANAGER_TARGET="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/comfyui-manager"
+# 8.6 Symlink
+MANAGER_TARGET="$STUDIO_ROOT/$COMFY_DIR/custom_nodes/ComfyUI-Manager"
 
 if [ ! -L "$MANAGER_TARGET" ]; then
     echo "🔗 Linking Manager..."
     ln -s "$STUDIO_ROOT/$MANAGER_DIR" "$MANAGER_TARGET"
 fi
 
-# ----------------------------------------------------------------------------------#
+echo "✅ Manager ready"
+
 # 8.7 Manager Requirements
-# ----------------------------------------------------------------------------------#
 if [ -f "$MANAGER_TARGET/requirements.txt" ]; then
     pip install -r "$MANAGER_TARGET/requirements.txt"
 fi
@@ -349,6 +367,9 @@ print("CUDA available:", torch.cuda.is_available())
 if torch.cuda.is_available():
     print("GPU:", torch.cuda.get_device_name(0))
 EOF
+
+# Custom
+pip install color-matcher timm omegaconf dill ultralytics piexif pymatting webcolors pywavelets mediapipe trimesh segment_anything
 
 # ----------------------------------------------------------------------------------#
 # 11. Finalize
